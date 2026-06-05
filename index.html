@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shoptalk — Pipeline Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f2333;
+    --bg2: #132b3d;
+    --bg3: #132b3d;
+    --bg4: #0d1f2d;
+    --border: #1e3a52;
+    --border2: #2e5470;
+    --text: #f0f4f8;
+    --muted: #7a9ab5;
+    --muted2: #5a7a95;
+    --accent: #00d4ff;
+    --green: #00e676;
+    --orange: #ff7043;
+    --purple: #ce93d8;
+    --hot: #ff5252;
+    --warm: #ffab40;
+    --nurture: #64b5f6;
+    --gold: #ffd54f;
+    --silver: #b0bec5;
+    --bronze: #ffb74d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; }
+  ::-webkit-scrollbar { width: 4px; background: var(--bg4); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* HEADER */
+  .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; color: var(--accent); line-height: 1; }
+  .logo-sub { font-size: 8px; letter-spacing: 4px; color: var(--muted); margin-top: 2px; }
+  .header-stats { display: flex; align-items: center; gap: 20px; }
+  .hstat { text-align: right; }
+  .hstat-label { font-size: 8px; letter-spacing: 3px; color: var(--muted); }
+  .hstat-value { font-family: 'Bebas Neue'; font-size: 24px; line-height: 1.1; }
+  .hstat-sub { font-size: 9px; color: var(--muted); }
+  .divider { width: 1px; height: 36px; background: var(--border); }
+  .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* TABS */
+  .tabs { border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 0; background: var(--bg2); }
+  .tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 11px 16px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); cursor: pointer; transition: all 0.2s; margin-bottom: -1px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* CONTENT */
+  .content { padding: 24px 28px; max-width: 1100px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--bg3); border: 1px solid var(--border); padding: 18px 20px; }
+  .card-title { font-size: 8px; letter-spacing: 3px; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; }
+
+  /* GRIDS */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .span2 { grid-column: span 2; }
+  @media (max-width: 800px) { .grid3 { grid-template-columns: 1fr 1fr; } .span2 { grid-column: span 1; } }
+  @media (max-width: 560px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+  /* BAR */
+  .bar-track { background: var(--bg4); border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+
+  /* FORM ELEMENTS */
+  select, input[type=text] { background: var(--bg4); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px; padding: 9px 12px; outline: none; width: 100%; transition: border-color 0.2s; -webkit-appearance: none; border-radius: 0; }
+  select:focus, input:focus { border-color: var(--accent); }
+  select option { background: var(--bg4); }
+
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 8px; letter-spacing: 2px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
+
+  /* LEAD SELECTOR */
+  .lead-selector { display: flex; gap: 8px; }
+  .lead-btn { flex: 1; padding: 9px 6px; border: 1px solid var(--border); background: var(--bg4); color: var(--muted); cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; text-align: center; transition: all 0.15s; }
+  .lead-btn .emoji { font-size: 16px; display: block; margin-bottom: 3px; }
+  .lead-btn .name { display: block; letter-spacing: 1px; }
+  .lead-btn .pct { display: block; font-size: 9px; margin-top: 3px; color: var(--muted); }
+  .lead-btn:hover { border-color: var(--border2); color: var(--text); }
+  .lead-btn.active-hot { border-color: var(--hot); color: var(--hot); background: #ff4d4d11; }
+  .lead-btn.active-warm { border-color: var(--warm); color: var(--warm); background: #f5a62311; }
+  .lead-btn.active-nurture { border-color: var(--nurture); color: var(--nurture); background: #4a90e211; }
+  .lead-btn.active-hot .pct, .lead-btn.active-warm .pct, .lead-btn.active-nurture .pct { color: inherit; }
+
+  /* BUTTONS */
+  .btn-primary { width: 100%; background: var(--accent); color: #0f2333; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 11px 20px; font-weight: 500; transition: all 0.15s; margin-top: 4px; }
+  .btn-primary:hover { background: #40f0ff; }
+  .btn-ghost { background: none; color: var(--muted); border: 1px solid var(--border); cursor: pointer; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; padding: 7px 13px; transition: all 0.15s; }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+  .btn-sm { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px; padding: 5px 10px; cursor: pointer; transition: all 0.15s; }
+  .btn-sm:hover { color: var(--text); border-color: var(--border2); }
+
+  /* SCORED PREVIEW */
+  .score-preview { background: var(--bg4); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
+  .score-preview .label { font-size: 9px; letter-spacing: 2px; color: var(--muted); }
+  .score-preview .value { font-family: 'Bebas Neue'; font-size: 22px; }
+
+  /* TAGS */
+  .lead-tag { display: inline-block; padding: 2px 7px; font-size: 8px; letter-spacing: 1px; font-weight: 500; }
+  .tag-hot { background: #ff4d4d22; color: var(--hot); }
+  .tag-warm { background: #f5a62322; color: var(--warm); }
+  .tag-nurture { background: #4a90e222; color: var(--nurture); }
+  .team-tag { display: inline-block; font-size: 8px; letter-spacing: 1px; padding: 2px 6px; }
+  .team-booth { color: var(--orange); }
+  .team-mtg { color: var(--purple); }
+
+  /* PROGRESS */
+  .progress-wrap { margin-bottom: 0; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--muted); margin-top: 5px; letter-spacing: 1px; }
+
+  /* BIG NUMBERS */
+  .big { font-family: 'Bebas Neue'; line-height: 1; }
+
+  /* FLASH */
+  #flash { position: fixed; top: 18px; right: 18px; z-index: 999; background: var(--accent); color: #0f2333; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; padding: 12px 20px; letter-spacing: 1px; display: none; animation: slideIn 0.3s ease; }
+  @keyframes slideIn { from { opacity:0; transform: translateY(-8px); } to { opacity:1; transform: none; } }
+
+  /* STATUS */
+  .status { font-size: 12px; padding: 9px 13px; margin-top: 10px; display: none; }
+  .status-ok { background: #00ff8822; color: var(--green); }
+  .status-err { background: #ff4d4d22; color: var(--hot); }
+  .status-load { background: var(--bg4); color: var(--muted); }
+
+  /* BLOCK PILLS */
+  .block-pill { display: inline-block; padding: 5px 13px; font-size: 9px; letter-spacing: 2px; cursor: pointer; border: 1px solid var(--border); color: var(--muted); margin-right: 6px; margin-bottom: 6px; transition: all 0.15s; background: none; font-family: 'DM Mono', monospace; text-transform: uppercase; }
+  .block-pill:hover { border-color: var(--border2); color: var(--text); }
+  .block-pill.active { border-color: var(--accent); color: var(--accent); background: #00e5ff11; }
+
+  /* ENTRY CHIP */
+  .entry-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg4); padding: 5px 10px; font-size: 10px; margin: 3px; }
+
+  /* LEADERBOARD ROW */
+  .lb-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .lb-rank { font-family: 'Bebas Neue'; font-size: 20px; width: 26px; text-align: center; color: var(--muted); }
+  .lb-name { flex: 1; font-size: 12px; }
+  .lb-val { text-align: right; }
+  .lb-val .main { font-size: 12px; }
+  .lb-val .sub { font-size: 9px; color: var(--muted); }
+
+  /* MEMBER BAR ROW */
+  .mbar { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .mbar-name { width: 72px; font-size: 11px; color: var(--muted); flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mbar-val { width: 54px; text-align: right; font-size: 10px; color: var(--muted); flex-shrink: 0; }
+
+  /* LEAD SUMMARY CARDS */
+  .lead-summary { }
+  .lead-summary .big { font-size: 30px; }
+  .lead-summary .scored { font-size: 12px; margin-top: 6px; }
+  .lead-summary .raw { font-size: 10px; color: var(--muted); }
+
+  .section-gap { margin-bottom: 16px; }
+  .row-between { display: flex; justify-content: space-between; align-items: center; }
+  .empty { color: var(--border2); font-size: 12px; text-align: center; padding: 32px 0; letter-spacing: 2px; }
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="logo">SHOPTALK</div>
+    <div class="logo-sub">PIPELINE COMMAND CENTER</div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-label">Scored Pipeline</div>
+      <div class="hstat-value" id="h-scored" style="color:#fff">$0</div>
+      <div class="hstat-sub" id="h-raw">raw $0</div>
+    </div>
+    <div class="divider"></div>
+    <div class="hstat">
+      <div class="hstat-label">Target</div>
+      <div class="hstat-value" style="color:var(--muted)" id="h-target">$16.5M</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--accent)" id="h-pct">0%</div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div class="pulse-dot" id="sync-dot"></div>
+        <div style="font-size:8px;letter-spacing:2px;color:var(--muted)" id="sync-label">CONNECTING</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('dashboard')">📊 Overview</button>
+  <button class="tab" onclick="showTab('log')">➕ Log Entry</button>
+  <button class="tab" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
+  <button class="tab" onclick="showTab('blocks')">📅 By Block</button>
+</div>
+
+<div class="content">
+
+  <!-- DASHBOARD -->
+  <div id="panel-dashboard" class="panel active">
+    <!-- Lead type row -->
+    <div class="grid3 section-gap" id="lead-cards"></div>
+
+    <!-- Team cards -->
+    <div class="grid2 section-gap">
+      <div class="card" id="booth-card" style="border-color:#ff6b3533">
+        <div class="card-title" style="color:var(--orange)">Booth Team · $750k × 8</div>
+        <div class="row-between" style="margin-bottom:12px;align-items:flex-end">
+          <div>
+            <div class="big" style="font-size:34px" id="booth-scored">$0</div>
+            <div style="font-size:9px;color:var(--muted)">scored pipeline</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:8px;color:var(--muted);letter-spacing:2px">TARGET</div>
+            <div class="big" style="font-size:18px;color:var(--muted)" id="booth-target">$6.0M</div>
+          </div>
+        </div>
+        <div class="bar-track" style="height:6px"><div class="bar-fill" id="booth-bar" style="background:var(--orange);width:0%"></div></div>
+        <div class="progress-labels"><span id="booth-pct">0%</span><span id="booth-rem">$6M to go</span></div>
+        <div style="margin-top:14px" id="booth-members"></div>
+      </div>
+      <div class="card" id="mtg-card" style="border-color:#a855f733">
+        <div class="card-title" style="color:var(--purple)">Meetings Team · $1.5M × 7</div>
+        <div class="row-between" style="margin-bottom:12px;align-items:flex-end">
+          <div>
+            <div class="big" style="font-size:34px" id="mtg-scored">$0</div>
+            <div style="font-size:9px;color:var(--muted)">scored pipeline</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:8px;color:var(--muted);letter-spacing:2px">TARGET</div>
+            <div class="big" style="font-size:18px;color:var(--muted)" id="mtg-target">$10.5M</div>
+          </div>
+        </div>
+        <div class="bar-track" style="height:6px"><div class="bar-fill" id="mtg-bar" style="background:var(--purple);width:0%"></div></div>
+        <div class="progress-labels"><span id="mtg-pct">0%</span><span id="mtg-rem">$10.5M to go</span></div>
+        <div style="margin-top:14px" id="mtg-members"></div>
+      </div>
+    </div>
+
+    <!-- Total + engagements -->
+    <div class="grid3 section-gap">
+      <div class="card span2" style="border-color:#00e5ff33">
+        <div class="card-title" style="color:var(--accent)">Combined Target Progress</div>
+        <div class="row-between" style="margin-bottom:12px;align-items:flex-end">
+          <div>
+            <div class="big" style="font-size:46px" id="total-scored">$0</div>
+            <div style="font-size:9px;color:var(--muted)" id="total-raw-label">scored · raw $0</div>
+          </div>
+          <div style="font-size:8px;color:var(--muted);letter-spacing:2px" id="total-target">/ $16.5M</div>
+        </div>
+        <div class="bar-track" style="height:10px"><div class="bar-fill" id="total-bar" style="background:var(--accent);width:0%"></div></div>
+        <div class="progress-labels"><span id="total-pct">0% achieved</span><span id="total-rem">$16.5M to go</span></div>
+      </div>
+      <div class="card" style="border-color:#00ff8833">
+        <div class="card-title" style="color:var(--green)">Total Engagements</div>
+        <div class="big" style="font-size:52px;color:var(--green)" id="total-eng">0</div>
+        <div style="font-size:8px;color:var(--muted);letter-spacing:2px;margin-top:8px">MEETINGS & CONVERSATIONS</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px" id="avg-eng">avg $0 / engagement</div>
+      </div>
+    </div>
+
+    <!-- Mini leaderboards -->
+    <div class="grid2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title" style="color:var(--gold)">🏆 Pipeline Master — Top 3</div>
+        <div id="mini-pip"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">⚡ Engagement Ninja — Top 3</div>
+        <div id="mini-eng"></div>
+      </div>
+    </div>
+    <!-- Top deals -->
+    <div class="card" style="border-color:#00d4ff33">
+      <div class="card-title" style="color:var(--accent)">💼 Top 5 Deals by Company</div>
+      <div id="top-deals"></div>
+    </div>
+  </div>
+
+  <!-- LOG ENTRY -->
+  <div id="panel-log" class="panel">
+    <div style="max-width:480px">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title" style="color:var(--accent)">Log a Meeting / Conversation</div>
+
+        <div class="field">
+          <label>Team Member</label>
+          <select id="f-name">
+            <option value="">— Select member —</option>
+            <optgroup label="Booth Team">
+              <option>Luca</option><option>Adrien</option><option>Lee</option>
+              <option>Christina</option><option>Miriyam</option><option>Zoran</option><option>Leonard</option><option>Javed</option>
+            </optgroup>
+            <optgroup label="Meetings Team">
+              <option>Prem</option><option>Penelope</option><option>Zohra</option>
+              <option>Mara</option><option>Greg</option><option>Rawad</option><option>Georg</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Event Block</label>
+          <select id="f-block">
+            <option value="day1">Day 1 — Tuesday</option>
+            <option value="rooftop">Rooftop — Tuesday Evening</option>
+            <option value="day2">Day 2 — Wednesday</option>
+            <option value="day3breakfast">Day 3 Breakfast — Thursday AM</option>
+            <option value="day3">Day 3 — Thursday</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Lead Type</label>
+          <div class="lead-selector">
+            <button class="lead-btn active-hot" data-type="hot" onclick="selectLead('hot')">
+              <span class="emoji">🔥</span><span class="name">HOT</span><span class="pct">100%</span>
+            </button>
+            <button class="lead-btn" data-type="warm" onclick="selectLead('warm')">
+              <span class="emoji">🟡</span><span class="name">WARM</span><span class="pct">75%</span>
+            </button>
+            <button class="lead-btn" data-type="nurture" onclick="selectLead('nurture')">
+              <span class="emoji">🌱</span><span class="name">NURTURE</span><span class="pct">50%</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>T-Shirt Size</label>
+          <select id="f-size" onchange="updatePreview()">
+            <option value="50000">XS — $50k</option>
+            <option value="100000">S — $100k</option>
+            <option value="250000" selected>M — $250k</option>
+            <option value="500000">L — $500k</option>
+            <option value="1000000">XL — $1M</option>
+          </select>
+        </div>
+
+        <div class="score-preview" id="score-preview">
+          <span class="label">SCORED VALUE</span>
+          <span class="value" id="preview-val" style="color:var(--hot)">$250k</span>
+        </div>
+
+        <div class="field">
+          <label>Company</label>
+          <input type="text" id="f-company" placeholder="Company name...">
+        </div>
+        <div class="field">
+          <label>Note (optional)</label>
+          <input type="text" id="f-note" placeholder="Additional context, follow-up action...">
+        </div>
+
+        <button class="btn-primary" onclick="logEntry()">⚡ Log Entry</button>
+        <div class="status" id="log-status"></div>
+      </div>
+
+      <!-- Recent entries for selected member -->
+      <div class="card" id="recent-card" style="display:none">
+        <div class="row-between" style="margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0" id="recent-title">RECENT</div>
+          <div>
+            <span style="font-size:9px;color:var(--muted)">scored: </span>
+            <span style="font-size:11px;color:var(--accent)" id="recent-scored">$0</span>
+          </div>
+        </div>
+        <div id="recent-entries"></div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn-ghost" onclick="exportXlsx()">⬇ Export Excel</button>
+        <button class="btn-ghost" onclick="exportCsv()">⬇ Backup CSV</button>
+        <label class="btn-ghost" style="cursor:pointer">⬆ Restore CSV<input type="file" accept=".csv,text/csv" onchange="importCsv(event)" style="display:none"></label>
+        <button class="btn-ghost" onclick="resetAll()">↺ Reset All</button>
+      </div>
+      <div style="margin-top:6px;text-align:right;font-size:9px;color:var(--muted2)">Excel = shareable record · CSV = backup/restore. To re-import after editing in Excel, use File → Save As → CSV.</div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div id="panel-leaderboard" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title" style="color:var(--gold)">💰 Pipeline Master</div>
+        <div id="lb-pipeline"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">⚡ Engagement Ninja</div>
+        <div id="lb-engagement"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BY BLOCK -->
+  <div id="panel-blocks" class="panel">
+    <div style="margin-bottom:16px" id="block-pills"></div>
+    <div id="block-content"></div>
+  </div>
+
+</div>
+
+<script>
+const BOOTH = ["Luca","Adrien","Lee","Christina","Miriyam","Zoran","Leonard","Javed"];
+const MEETINGS = ["Prem","Penelope","Zohra","Mara","Greg","Rawad","Georg"];
+const ALL = [...BOOTH, ...MEETINGS];
+const BOOTH_TARGET = BOOTH.length * 750000;
+const MTG_TARGET = MEETINGS.length * 1500000;
+const TOTAL_TARGET = BOOTH_TARGET + MTG_TARGET;
+const BLOCKS = [
+  {id:"day1",label:"Day 1",sub:"Tuesday"},
+  {id:"rooftop",label:"Rooftop",sub:"Tuesday Evening"},
+  {id:"day2",label:"Day 2",sub:"Wednesday"},
+  {id:"day3breakfast",label:"Day 3 Breakfast",sub:"Thursday AM"},
+  {id:"day3",label:"Day 3",sub:"Thursday"},
+];
+const LEAD_TYPES = {hot:{score:1.0,color:"#ff4d4d"},warm:{score:0.75,color:"#f5a623"},nurture:{score:0.5,color:"#4a90e2"}};
+const TSHIRT_LABELS = {50000:"XS",100000:"S",250000:"M",500000:"L",1000000:"XL"};
+
+// ── Supabase ─────────────────────────────────────────────────────────────────
+const SB_URL   = 'https://zrfqdyqzvthkzfcusyso.supabase.co';
+const SB_KEY   = 'sb_publishable_ZoKU8tEBHFKzMNHmbNEk_w_3UNgjzXq';
+const SB_TABLE = 'shoptalk_entries';
+const SB_HDR   = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+
+function newId() {
+  return typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16);
+      });
+}
+
+let pendingOps = [];
+try { pendingOps = JSON.parse(localStorage.getItem('shoptalk_pending') || '[]'); } catch {}
+function savePending() { try { localStorage.setItem('shoptalk_pending', JSON.stringify(pendingOps)); } catch {} }
+
+function setSyncStatus(s) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  if (!dot||!lbl) return;
+  const cfg = {ok:['var(--green)','LIVE'],syncing:['var(--warm)','SYNCING'],offline:['var(--hot)','OFFLINE'],connecting:['var(--accent)','CONNECTING']};
+  const [c,t] = cfg[s]||cfg.ok;
+  dot.style.background = c; lbl.textContent = t; lbl.style.color = c;
+}
+
+async function sbGet() {
+  const res = await fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?select=*&order=logged_at.asc', {headers:SB_HDR});
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+async function sbPost(row) {
+  const res = await fetch(SB_URL+'/rest/v1/'+SB_TABLE, {method:'POST',headers:SB_HDR,body:JSON.stringify(row)});
+  if (!res.ok) throw new Error(res.status);
+}
+async function sbDel(id) {
+  await fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?id=eq.'+id, {method:'DELETE',headers:SB_HDR});
+}
+
+function rowToEntry(r) {
+  return { id:r.id, block:r.block, raw:r.raw, scored:r.scored,
+           leadType:r.lead_type, size:r.size_label,
+           company:r.company||'', note:r.note||'',
+           ts: new Date(r.logged_at).getTime() };
+}
+function entryToRow(name, e) {
+  return { id:e.id, member:name, team:BOOTH.includes(name)?'Booth':'Meetings',
+           block:e.block, lead_type:e.leadType, size_label:e.size,
+           raw:e.raw, scored:e.scored, company:e.company||'', note:e.note||'' };
+}
+
+async function flushPending() {
+  if (!pendingOps.length) return;
+  const batch=[...pendingOps]; pendingOps=[]; savePending();
+  for (const op of batch) {
+    try {
+      if (op.type==='insert') await sbPost(op.row);
+      else if (op.type==='delete') await sbDel(op.id);
+    } catch { pendingOps.push(op); }
+  }
+  savePending();
+}
+
+async function syncFromSupabase() {
+  setSyncStatus('syncing');
+  try {
+    const rows = await sbGet();
+    const fresh = initData();
+    rows.forEach(r => {
+      if (!fresh[r.member]) return;
+      const e = rowToEntry(r);
+      fresh[r.member].entries.push(e);
+      fresh[r.member].scored += r.scored;
+      fresh[r.member].raw    += r.raw;
+      fresh[r.member].eng++;
+    });
+    data = fresh;
+    saveToStorage();
+    renderAll();
+    setSyncStatus('ok');
+    await flushPending();
+  } catch { setSyncStatus('offline'); }
+}
+
+async function sbInsertAsync(name, entry) {
+  try { await sbPost(entryToRow(name, entry)); }
+  catch { pendingOps.push({type:'insert', row:entryToRow(name,entry)}); savePending(); }
+}
+async function sbDeleteAsync(id) {
+  try { await sbDel(id); }
+  catch { pendingOps.push({type:'delete', id}); savePending(); }
+}
+// ── End Supabase ──────────────────────────────────────────────────────────────
+
+let state = {leadType:"hot"};
+let data = {};
+let activeBlock = "day1";
+
+function initData() {
+  const d = {};
+  ALL.forEach(n => d[n] = {scored:0, raw:0, eng:0, entries:[]});
+  return d;
+}
+
+const STORE_KEY = "shoptalk_data";
+function loadFromStorage() {
+  try {
+    let r = localStorage.getItem(STORE_KEY);
+    if (!r) { // one-time migration from old sessionStorage builds
+      r = sessionStorage.getItem(STORE_KEY);
+      if (r) localStorage.setItem(STORE_KEY, r);
+    }
+    if (r) return JSON.parse(r);
+  } catch {}
+  return initData();
+}
+
+function saveToStorage() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {}
+}
+
+function fmt(n) {
+  if (n >= 1000000) return "$" + (n/1000000).toFixed(2) + "M";
+  if (n >= 1000) return "$" + Math.round(n/1000) + "k";
+  return "$" + n;
+}
+function pct(v, t) { return Math.min(100, Math.round(v/t*100)); }
+function cap(v, t) { return Math.min(100, v/t*100).toFixed(1) + "%"; }
+
+function selectLead(type) {
+  state.leadType = type;
+  document.querySelectorAll('.lead-btn').forEach(b => {
+    b.className = 'lead-btn' + (b.dataset.type === type ? ' active-'+type : '');
+  });
+  updatePreview();
+}
+
+function updatePreview() {
+  const raw = parseInt(document.getElementById('f-size').value) || 250000;
+  const lt = LEAD_TYPES[state.leadType];
+  const scored = Math.round(raw * lt.score);
+  const el = document.getElementById('preview-val');
+  el.textContent = fmt(scored);
+  el.style.color = lt.color;
+}
+
+function logEntry() {
+  const name = document.getElementById('f-name').value;
+  const block = document.getElementById('f-block').value;
+  const raw = parseInt(document.getElementById('f-size').value);
+  const company = document.getElementById("f-company").value.trim();
+  const note = document.getElementById("f-note").value.trim();
+  if (!name) { showStatus('Please select a team member', 'err'); return; }
+  const lt = LEAD_TYPES[state.leadType];
+  const scored = Math.round(raw * lt.score);
+  data[name].scored += scored;
+  data[name].raw += raw;
+  data[name].eng++;
+  const entry = {id: newId(), block, raw, scored, leadType: state.leadType, size: TSHIRT_LABELS[raw] || 'M', company, note, ts: Date.now()};
+  data[name].entries.push(entry);
+  saveToStorage();
+  renderAll();
+  sbInsertAsync(name, entry);
+  showFlash("⚡ " + name + " — " + fmt(scored) + " scored (" + state.leadType + ")");
+  showStatus("Logged! " + fmt(scored) + " scored for " + name, 'ok');
+  document.getElementById('f-company').value = '';
+  document.getElementById('f-note').value = '';
+  updateRecentCard(name);
+}
+
+function showFlash(msg) {
+  const el = document.getElementById('flash');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(window._ft);
+  window._ft = setTimeout(() => el.style.display='none', 3000);
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('log-status');
+  el.textContent = msg;
+  el.className = 'status status-' + type;
+  el.style.display = 'block';
+  if (type === 'ok') setTimeout(() => el.style.display='none', 3500);
+}
+
+function updateRecentCard(name) {
+  if (!name || !data[name]) { document.getElementById('recent-card').style.display='none'; return; }
+  document.getElementById('recent-card').style.display = 'block';
+  document.getElementById('recent-title').textContent = name.toUpperCase() + ' — RECENT';
+  document.getElementById('recent-scored').textContent = fmt(data[name].scored);
+  const entries = [...data[name].entries].reverse().slice(0,5);
+  document.getElementById('recent-entries').innerHTML = entries.map(e => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px">
+      <div style="display:flex;gap:7px;align-items:center">
+        <span class="lead-tag tag-${e.leadType}">${e.leadType.toUpperCase()}</span>
+        <span style="color:var(--accent)">${e.size}</span>
+        ${e.company ? '<span style="color:var(--text)">'+e.company+'</span>' : ''}${e.note ? '<span style="color:var(--muted2)"> · '+e.note+'</span>' : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="text-align:right">
+          <div>${fmt(e.scored)}</div>
+          <div style="font-size:9px;color:var(--muted)">raw ${fmt(e.raw)}</div>
+        </div>
+        <button class="btn-sm" style="padding:3px 7px" title="Edit" onclick="editEntry('${name}','${e.id||e.ts}')">✎</button>
+        <button class="btn-sm" style="padding:3px 7px" title="Delete" onclick="deleteEntry('${name}','${e.id||e.ts}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+document.getElementById('f-name').addEventListener('change', e => updateRecentCard(e.target.value));
+
+function resetAll() {
+  if (!confirm('Reset all data?')) return;
+  data = initData();
+  saveToStorage();
+  renderAll();
+  document.getElementById('recent-card').style.display='none';
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','leaderboard','blocks'][i]===name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+function renderAll() {
+  const boothS = BOOTH.reduce((s,n)=>s+data[n].scored,0);
+  const mtgS = MEETINGS.reduce((s,n)=>s+data[n].scored,0);
+  const totalS = boothS + mtgS;
+  const totalR = ALL.reduce((s,n)=>s+data[n].raw,0);
+  const totalE = ALL.reduce((s,n)=>s+data[n].eng,0);
+
+  // Header
+  const hScored = document.getElementById('h-scored');
+  hScored.textContent = fmt(totalS);
+  hScored.style.color = totalS >= TOTAL_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('h-raw').textContent = 'raw ' + fmt(totalR);
+  document.getElementById('h-pct').textContent = pct(totalS, TOTAL_TARGET) + '%';
+  document.getElementById('h-pct').style.color = totalS >= TOTAL_TARGET ? 'var(--green)' : 'var(--accent)';
+
+  // Targets (derived — keeps labels in sync with team sizes)
+  document.getElementById('h-target').textContent = fmt(TOTAL_TARGET);
+  document.getElementById('booth-target').textContent = fmt(BOOTH_TARGET);
+  document.getElementById('mtg-target').textContent = fmt(MTG_TARGET);
+  document.getElementById('total-target').textContent = '/ ' + fmt(TOTAL_TARGET);
+
+  // Lead type cards
+  const leadBreakdown = ['hot','warm','nurture'].map(id => {
+    let cnt=0, raw=0, scored=0;
+    ALL.forEach(n => data[n].entries.forEach(e => { if(e.leadType===id){cnt++;raw+=e.raw;scored+=e.scored;} }));
+    return {id,cnt,raw,scored};
+  });
+  const ltColors = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  const ltPct = {hot:'100%',warm:'75%',nurture:'50%'};
+  document.getElementById('lead-cards').innerHTML = leadBreakdown.map(lt => `
+    <div class="card" style="border-color:${ltColors[lt.id]}44">
+      <div style="font-size:8px;letter-spacing:2px;color:${ltColors[lt.id]};margin-bottom:8px">${ltEmoji[lt.id]} ${lt.id.toUpperCase()} LEADS · ${ltPct[lt.id]}</div>
+      <div class="big" style="font-size:30px;color:#fff">${lt.cnt}</div>
+      <div style="margin-top:8px">
+        <div style="font-size:12px;color:#fff">${fmt(lt.scored)} <span style="font-size:9px;color:var(--muted)">scored</span></div>
+        <div style="font-size:10px;color:var(--muted)">${fmt(lt.raw)} raw</div>
+      </div>
+    </div>`).join('');
+
+  // Team cards
+  const boothMax = Math.max(1, ...BOOTH.map(n=>data[n].scored));
+  const mtgMax = Math.max(1, ...MEETINGS.map(n=>data[n].scored));
+  document.getElementById('booth-scored').textContent = fmt(boothS);
+  document.getElementById('booth-scored').style.color = boothS >= BOOTH_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('booth-bar').style.width = pct(boothS,BOOTH_TARGET)+'%';
+  document.getElementById('booth-bar').style.background = boothS >= BOOTH_TARGET ? 'var(--green)' : 'var(--orange)';
+  document.getElementById('booth-pct').textContent = pct(boothS,BOOTH_TARGET)+'%';
+  document.getElementById('booth-rem').textContent = fmt(Math.max(0,BOOTH_TARGET-boothS))+' to go';
+  document.getElementById('booth-members').innerHTML = BOOTH.map(n => `
+    <div class="mbar">
+      <span class="mbar-name">${n}</span>
+      <div class="bar-track" style="flex:1;height:5px"><div class="bar-fill" style="width:${pct(data[n].scored,boothMax)}%;background:var(--orange)"></div></div>
+      <span class="mbar-val">${fmt(data[n].scored)}</span>
+    </div>`).join('');
+
+  document.getElementById('mtg-scored').textContent = fmt(mtgS);
+  document.getElementById('mtg-scored').style.color = mtgS >= MTG_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('mtg-bar').style.width = pct(mtgS,MTG_TARGET)+'%';
+  document.getElementById('mtg-bar').style.background = mtgS >= MTG_TARGET ? 'var(--green)' : 'var(--purple)';
+  document.getElementById('mtg-pct').textContent = pct(mtgS,MTG_TARGET)+'%';
+  document.getElementById('mtg-rem').textContent = fmt(Math.max(0,MTG_TARGET-mtgS))+' to go';
+  document.getElementById('mtg-members').innerHTML = MEETINGS.map(n => `
+    <div class="mbar">
+      <span class="mbar-name">${n}</span>
+      <div class="bar-track" style="flex:1;height:5px"><div class="bar-fill" style="width:${pct(data[n].scored,mtgMax)}%;background:var(--purple)"></div></div>
+      <span class="mbar-val">${fmt(data[n].scored)}</span>
+    </div>`).join('');
+
+  // Total
+  document.getElementById('total-scored').textContent = fmt(totalS);
+  document.getElementById('total-scored').style.color = totalS >= TOTAL_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('total-raw-label').textContent = 'scored · raw ' + fmt(totalR);
+  document.getElementById('total-bar').style.width = pct(totalS,TOTAL_TARGET)+'%';
+  document.getElementById('total-bar').style.background = totalS >= TOTAL_TARGET ? 'var(--green)' : 'var(--accent)';
+  document.getElementById('total-pct').textContent = pct(totalS,TOTAL_TARGET)+'% achieved';
+  document.getElementById('total-rem').textContent = fmt(Math.max(0,TOTAL_TARGET-totalS))+' to go';
+  document.getElementById('total-eng').textContent = totalE;
+  document.getElementById('avg-eng').textContent = 'avg ' + (totalE ? fmt(Math.round(totalS/totalE)) : '$0') + ' / engagement';
+
+  // Sorted leaders
+  const byPip = ALL.map(n=>({n,scored:data[n].scored,raw:data[n].raw,eng:data[n].eng,team:BOOTH.includes(n)?'booth':'mtg'})).sort((a,b)=>b.scored-a.scored);
+  const byEng = [...byPip].sort((a,b)=>b.eng-a.eng);
+  const medals = ['var(--gold)','var(--silver)','var(--bronze)'];
+  const medalEmoji = ['🥇','🥈','🥉'];
+
+  const pipRows = (arr, n=14) => arr.slice(0,n).map((m,i) => `
+    <div class="lb-row">
+      <div class="lb-rank" style="color:${i<3?medals[i]:'var(--border2)'};">${i<3?medalEmoji[i]:i+1}</div>
+      <div class="lb-name">${m.n} <span class="team-tag team-${m.team}">${m.team}</span></div>
+      <div class="lb-val">
+        <div class="main" style="color:${m.scored>0?'#fff':'var(--border2)'}">${fmt(m.scored)}</div>
+        <div class="sub">${fmt(m.raw)} raw</div>
+      </div>
+    </div>`).join('') || '<div class="empty">NO DATA YET</div>';
+
+  const engRows = (arr, n=14) => arr.slice(0,n).map((m,i) => `
+    <div class="lb-row">
+      <div class="lb-rank" style="color:${i<3?medals[i]:'var(--border2)'};">${i<3?medalEmoji[i]:i+1}</div>
+      <div class="lb-name">${m.n} <span class="team-tag team-${m.team}">${m.team}</span></div>
+      <div class="lb-val">
+        <div class="main" style="color:${m.eng>0?'var(--green)':'var(--border2)'}">${m.eng}</div>
+        <div class="sub">engagements</div>
+      </div>
+    </div>`).join('') || '<div class="empty">NO DATA YET</div>';
+
+  document.getElementById('lb-pipeline').innerHTML = pipRows(byPip);
+  document.getElementById('lb-engagement').innerHTML = engRows(byEng);
+
+  // Mini leaderboards
+  document.getElementById('mini-pip').innerHTML = pipRows(byPip, 3);
+  document.getElementById('mini-eng').innerHTML = engRows(byEng, 3);
+
+  // Top 5 deals by company (highest scored value, must have a company name)
+  const allEntries = ALL.flatMap(n => data[n].entries.filter(e => e.company).map(e => ({...e, name: n, team: BOOTH.includes(n) ? 'booth' : 'mtg'})));
+  // Group by company, sum scored value
+  const byCompany = {};
+  allEntries.forEach(e => {
+    const key = e.company.trim();
+    if (!byCompany[key]) byCompany[key] = {company: key, scored: 0, raw: 0, leadType: e.leadType, name: e.name, team: e.team};
+    byCompany[key].scored += e.scored;
+    byCompany[key].raw += e.raw;
+    // Upgrade lead type: hot > warm > nurture
+    const rank = {hot:3, warm:2, nurture:1};
+    if (rank[e.leadType] > rank[byCompany[key].leadType]) byCompany[key].leadType = e.leadType;
+  });
+  const topDeals = Object.values(byCompany).sort((a,b) => b.scored - a.scored).slice(0, 5);
+  const medals2 = ['var(--gold)','var(--silver)','var(--bronze)'];
+  const medalEmoji2 = ['🥇','🥈','🥉'];
+  const maxDeal = topDeals[0]?.scored || 1;
+  document.getElementById('top-deals').innerHTML = topDeals.length ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px">    ${topDeals.map((d,i) => `
+      <div style="background:var(--bg4);border:1px solid ${ltColors[d.leadType]}44;padding:14px 16px;position:relative">
+        <div style="font-size:18px;font-family:'Bebas Neue';color:${i<3?medals2[i]:'var(--muted)'};margin-bottom:6px">${i<3?medalEmoji2[i]:i+1}</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.company}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${d.name} · <span class="team-tag team-${d.team}">${d.team}</span></div>
+        <div style="font-size:20px;font-family:'Bebas Neue';color:var(--text);line-height:1">${fmt(d.scored)}</div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:8px">scored</div>
+        <div style="margin-bottom:6px"><span class="lead-tag tag-${d.leadType}">${ltEmoji[d.leadType]} ${d.leadType.toUpperCase()}</span></div>
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct(d.scored,maxDeal)}%;background:${ltColors[d.leadType]};border-radius:2px"></div></div>
+      </div>`).join('')}
+    </div>` : '<div class="empty">No companies logged yet — add a company name when logging entries</div>';
+
+  // Blocks
+  renderBlocks();
+}
+
+function renderBlocks() {
+  document.getElementById('block-pills').innerHTML = BLOCKS.map(b => `
+    <button class="block-pill ${b.id===activeBlock?'active':''}" onclick="setBlock('${b.id}')">${b.label}</button>`).join('');
+
+  const entries = ALL.flatMap(n => data[n].entries.filter(e=>e.block===activeBlock).map(e=>({...e,name:n,team:BOOTH.includes(n)?'booth':'mtg'})));
+  if (!entries.length) { document.getElementById('block-content').innerHTML='<div class="empty">NO ENTRIES FOR THIS BLOCK YET</div>'; return; }
+
+  const blockScored = entries.reduce((s,e)=>s+e.scored,0);
+  const blockRaw = entries.reduce((s,e)=>s+e.raw,0);
+  const block = BLOCKS.find(b=>b.id===activeBlock);
+
+  // Group by member
+  const byMember = {};
+  entries.forEach(e => {
+    if (!byMember[e.name]) byMember[e.name] = {scored:0,raw:0,entries:[],team:e.team};
+    byMember[e.name].scored += e.scored;
+    byMember[e.name].raw += e.raw;
+    byMember[e.name].entries.push(e);
+  });
+  const sorted = Object.entries(byMember).sort((a,b)=>b[1].scored-a[1].scored);
+
+  document.getElementById('block-content').innerHTML = `
+    <div class="card" style="border-color:#00e5ff33;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div class="big" style="font-size:30px;color:var(--accent)">${block.label}</div>
+          <div style="font-size:8px;color:var(--muted);letter-spacing:3px">${block.sub.toUpperCase()}</div>
+        </div>
+        <div style="display:flex;gap:28px;text-align:right">
+          <div>
+            <div style="font-size:8px;color:var(--muted);letter-spacing:2px">SCORED</div>
+            <div class="big" style="font-size:22px">${fmt(blockScored)}</div>
+            <div style="font-size:9px;color:var(--muted)">raw ${fmt(blockRaw)}</div>
+          </div>
+          <div>
+            <div style="font-size:8px;color:var(--muted);letter-spacing:2px">ENGAGEMENTS</div>
+            <div class="big" style="font-size:22px;color:var(--green)">${entries.length}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${sorted.map(([name,m]) => `
+      <div class="card" style="border-color:${m.team==='booth'?'#ff6b3533':'#a855f733'};margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div>
+            <span style="font-size:14px">${name}</span>
+            <span class="team-tag team-${m.team}" style="margin-left:8px">${m.team}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px">${fmt(m.scored)} <span style="font-size:9px;color:var(--muted)">scored</span></div>
+            <div style="font-size:9px;color:var(--muted)">${fmt(m.raw)} raw · ${m.entries.length} eng</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap">
+          ${m.entries.map(e=>`
+            <div class="entry-chip" style="border:1px solid ${LEAD_TYPES[e.leadType].color}44">
+              <span class="lead-tag tag-${e.leadType}">${e.leadType}</span>
+              <span style="color:var(--accent)">${e.size}</span>
+              <span style="color:var(--muted)">→ ${fmt(e.scored)}</span>
+              ${e.company?'<span style="color:var(--text)">'+e.company+'</span>':''}${e.note?'<span style="color:var(--muted2)"> · '+e.note+'</span>':''}
+              <span style="color:var(--muted2);cursor:pointer;margin-left:2px" title="Delete" onclick="deleteEntry('${name}','${e.id||e.ts}')">✕</span>
+            </div>`).join('')}
+        </div>
+      </div>`).join('')}`;
+}
+
+function setBlock(id) { activeBlock = id; renderBlocks(); }
+
+/* ---------- Edit / Delete individual entries ---------- */
+function findEntry(name, id) {
+  if (!data[name]) return -1;
+  return data[name].entries.findIndex(e => String(e.id || e.ts) === String(id));
+}
+
+function deleteEntry(name, id, silent) {
+  const idx = findEntry(name, id);
+  if (idx === -1) return;
+  if (!silent && !confirm('Delete this entry?')) return;
+  const e = data[name].entries[idx];
+  data[name].scored -= e.scored;
+  data[name].raw -= e.raw;
+  data[name].eng = Math.max(0, data[name].eng - 1);
+  data[name].entries.splice(idx, 1);
+  saveToStorage();
+  renderAll();
+  sbDeleteAsync(String(e.id));
+  updateRecentCard(name);
+}
+
+function editEntry(name, id) {
+  const idx = findEntry(name, id);
+  if (idx === -1) return;
+  const e = data[name].entries[idx];
+  document.getElementById('f-name').value = name;
+  document.getElementById('f-block').value = e.block;
+  document.getElementById('f-size').value = String(e.raw);
+  document.getElementById('f-company').value = e.company || '';
+  document.getElementById('f-note').value = e.note || '';
+  selectLead(e.leadType);
+  deleteEntry(name, id, true);   // remove original; re-logged on save
+  showTab('log');
+  window.scrollTo(0, 0);
+  showStatus('Editing entry — adjust the fields and click "Log Entry" to save', 'load');
+}
+
+/* ---------- CSV backup / restore ---------- */
+const CSV_COLS = ['Timestamp','Member','Team','Block','Lead Type','Size','Raw Value','Scored Value','Company','Note'];
+const BLOCK_LABEL = Object.fromEntries(BLOCKS.map(b => [b.id, b.label]));
+const LABEL_BLOCK = Object.fromEntries(BLOCKS.map(b => [b.label.toLowerCase(), b.id]));
+
+function entryRows() {
+  const rows = [];
+  ALL.forEach(n => {
+    const team = BOOTH.includes(n) ? 'Booth' : 'Meetings';
+    data[n].entries.forEach(e => {
+      rows.push([
+        new Date(e.ts || Date.now()).toISOString(),
+        n, team,
+        BLOCK_LABEL[e.block] || e.block,
+        e.leadType, e.size,
+        e.raw, e.scored,
+        e.company || '', e.note || ''
+      ]);
+    });
+  });
+  return rows;
+}
+
+function csvEscape(v) {
+  v = String(v == null ? '' : v);
+  return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function stamp() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+}
+
+function exportCsv() {
+  const rows = [CSV_COLS, ...entryRows()];
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+  download(new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'}), 'shoptalk-pipeline-' + stamp() + '.csv');
+  showFlash('⬇ CSV backup downloaded');
+}
+
+function parseCsv(text) {
+  text = text.replace(/^﻿/, '');
+  const rows = []; let row = [], field = '', i = 0, inQ = false;
+  while (i < text.length) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else field += c;
+    }
+    i++;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
+}
+
+function importCsv(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const rows = parseCsv(reader.result);
+      if (!rows.length) throw new Error('empty file');
+      const header = rows[0].map(h => h.trim().toLowerCase());
+      const col = name => header.indexOf(name.toLowerCase());
+      const iMember = col('Member'), iBlock = col('Block'), iLead = col('Lead Type'),
+            iRaw = col('Raw Value'), iCompany = col('Company'), iNote = col('Note'), iTs = col('Timestamp');
+      if (iMember < 0 || iRaw < 0 || iLead < 0) throw new Error('missing required columns (Member, Lead Type, Raw Value)');
+      if (!confirm('Restore from CSV? This REPLACES all current data with the file contents.')) { ev.target.value = ''; return; }
+      const fresh = initData();
+      let n = 0, skipped = 0;
+      for (let r = 1; r < rows.length; r++) {
+        const cells = rows[r];
+        const member = (cells[iMember] || '').trim();
+        if (!ALL.includes(member)) { skipped++; continue; }
+        const lt = (cells[iLead] || 'hot').trim().toLowerCase();
+        const lead = LEAD_TYPES[lt] ? lt : 'hot';
+        const raw = parseInt(String(cells[iRaw]).replace(/[^0-9.]/g, '')) || 0;
+        if (!raw) { skipped++; continue; }
+        const scored = Math.round(raw * LEAD_TYPES[lead].score);
+        const blockRaw = iBlock >= 0 ? (cells[iBlock] || '').trim() : '';
+        const block = BLOCK_LABEL[blockRaw] ? blockRaw : (LABEL_BLOCK[blockRaw.toLowerCase()] || 'day1');
+        const ts = iTs >= 0 && cells[iTs] ? (Date.parse(cells[iTs]) || Date.now()) : Date.now();
+        fresh[member].entries.push({
+          id: ts + '_' + Math.random().toString(36).slice(2,7),
+          block, raw, scored, leadType: lead,
+          size: TSHIRT_LABELS[raw] || 'M',
+          company: iCompany >= 0 ? (cells[iCompany] || '').trim() : '',
+          note: iNote >= 0 ? (cells[iNote] || '').trim() : '',
+          ts
+        });
+        fresh[member].scored += scored; fresh[member].raw += raw; fresh[member].eng++;
+        n++;
+      }
+      data = fresh;
+      saveToStorage();
+      renderAll();
+      document.getElementById('recent-card').style.display = 'none';
+      showFlash('⬆ Imported ' + n + ' entries' + (skipped ? ' (' + skipped + ' skipped)' : ''));
+      showStatus('Imported ' + n + ' entries' + (skipped ? ', ' + skipped + ' rows skipped' : ''), 'ok');
+    } catch (err) {
+      showStatus('Import failed: ' + err.message, 'err');
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Real .xlsx export (self-contained, no libraries) ---------- */
+function crc32(bytes) {
+  let crc = -1;
+  for (let i = 0; i < bytes.length; i++) {
+    crc ^= bytes[i];
+    for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+  }
+  return (crc ^ -1) >>> 0;
+}
+function concatBytes(arrs) {
+  let len = 0; arrs.forEach(a => len += a.length);
+  const out = new Uint8Array(len); let o = 0;
+  arrs.forEach(a => { out.set(a, o); o += a.length; });
+  return out;
+}
+function u16(n){ return new Uint8Array([n & 255, (n>>8) & 255]); }
+function u32(n){ return new Uint8Array([n & 255, (n>>8) & 255, (n>>16) & 255, (n>>24) & 255]); }
+
+function zipStore(files) { // files: [{name, data:Uint8Array}]  (no compression)
+  const enc = new TextEncoder();
+  const locals = [], central = [];
+  let offset = 0;
+  files.forEach(f => {
+    const nameB = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const local = concatBytes([
+      u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(size), u32(size), u16(nameB.length), u16(0), nameB, f.data
+    ]);
+    central.push(concatBytes([
+      u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(size), u32(size), u16(nameB.length), u16(0), u16(0), u16(0), u16(0),
+      u32(0), u32(offset), nameB
+    ]));
+    locals.push(local);
+    offset += local.length;
+  });
+  const centralBytes = concatBytes(central);
+  const eocd = concatBytes([
+    u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length),
+    u32(centralBytes.length), u32(offset), u16(0)
+  ]);
+  return new Blob([concatBytes([...locals, centralBytes, eocd])], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function colRef(i) { let s = ''; i++; while (i > 0) { const m = (i-1) % 26; s = String.fromCharCode(65+m) + s; i = Math.floor((i-1)/26); } return s; }
+function xmlEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function sheetXml(rows) { // rows: array of arrays; numbers stay numeric, everything else inline string
+  const body = rows.map((row, r) => {
+    const cells = row.map((val, c) => {
+      const ref = colRef(c) + (r+1);
+      if (typeof val === 'number' && isFinite(val)) return '<c r="'+ref+'"><v>'+val+'</v></c>';
+      return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xmlEsc(val == null ? '' : val)+'</t></is></c>';
+    }).join('');
+    return '<row r="'+(r+1)+'">'+cells+'</row>';
+  }).join('');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' + body + '</sheetData></worksheet>';
+}
+
+function exportXlsx() {
+  const enc = new TextEncoder();
+  // Sheet 1 — every meeting / opportunity
+  const entries = [CSV_COLS, ...entryRows()];
+  // Sheet 2 — per-member summary
+  const summary = [['Member','Team','Scored Pipeline','Raw Pipeline','Engagements']];
+  ALL.forEach(n => summary.push([n, BOOTH.includes(n)?'Booth':'Meetings', data[n].scored, data[n].raw, data[n].eng]));
+  const boothS = BOOTH.reduce((s,n)=>s+data[n].scored,0), mtgS = MEETINGS.reduce((s,n)=>s+data[n].scored,0);
+  summary.push([]);
+  summary.push(['Booth Team','', boothS, '', 'target ' + fmt(BOOTH_TARGET)]);
+  summary.push(['Meetings Team','', mtgS, '', 'target ' + fmt(MTG_TARGET)]);
+  summary.push(['COMBINED','', boothS+mtgS, '', 'target ' + fmt(TOTAL_TARGET)]);
+
+  const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+  const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets><sheet name="Entries" sheetId="1" r:id="rId1"/><sheet name="Summary" sheetId="2" r:id="rId2"/></sheets></workbook>';
+  const wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>';
+
+  const files = [
+    {name:'[Content_Types].xml', data: enc.encode(contentTypes)},
+    {name:'_rels/.rels', data: enc.encode(rels)},
+    {name:'xl/workbook.xml', data: enc.encode(workbook)},
+    {name:'xl/_rels/workbook.xml.rels', data: enc.encode(wbRels)},
+    {name:'xl/worksheets/sheet1.xml', data: enc.encode(sheetXml(entries))},
+    {name:'xl/worksheets/sheet2.xml', data: enc.encode(sheetXml(summary))},
+  ];
+  download(zipStore(files), 'shoptalk-pipeline-' + stamp() + '.xlsx');
+  showFlash('⬇ Excel workbook downloaded');
+}
+
+// Init — show cached data instantly, then sync live from Supabase
+data = loadFromStorage();
+updatePreview();
+renderAll();
+syncFromSupabase();
+setInterval(syncFromSupabase, 30000);
+</script>
+</body>
+</html>
