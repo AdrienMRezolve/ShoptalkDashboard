@@ -873,102 +873,225 @@ function showTab(name) {
 }
 
 let pipFilter = 'all';
+let _pipData  = {}; // id → company object (for inline edit population)
 
 function renderPipeline() {
-  // Build company-level view from all member entries
   const companies = [];
   ALL.forEach(n => {
     const team = SDR.includes(n) ? 'sdr' : BOOTH.includes(n) ? 'booth' : 'meetings';
     data[n].entries.forEach(e => {
       if (!e.company) return;
-      companies.push({
-        id:         e.id,
-        company:    e.company,
-        owner:      n,
-        team,
-        sdrSource:  e.sdrSource || '',
-        leadType:   e.leadType,
-        raw:        e.raw,
-        scored:     e.scored,
-        block:      e.block,
-        note:       e.note || '',
-        needsOwner: SDR.includes(n)
-      });
+      companies.push({ id:e.id, company:e.company, owner:n, team,
+        sdrSource:e.sdrSource||'', leadType:e.leadType, raw:e.raw,
+        scored:e.scored, block:e.block, note:e.note||'', needsOwner:SDR.includes(n) });
     });
   });
-
-  // Sort by scored desc
   companies.sort((a,b) => b.scored - a.scored);
 
-  const total      = companies.reduce((s,c)=>s+c.scored,0);
-  const totalRaw   = companies.reduce((s,c)=>s+c.raw,0);
-  const sdrDeals   = companies.filter(c=>c.sdrSource);
-  const noOwner    = companies.filter(c=>c.needsOwner);
-  const ltColors   = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
-  const ltEmoji    = {hot:'🔥',warm:'🟡',nurture:'🌱'};
-  const BLOCK_LBL  = {day1:'Day 1',rooftop:'Rooftop',day2:'Day 2',day3breakfast:'Day 3 AM',day3:'Day 3'};
+  // Cache for inline edit
+  _pipData = {};
+  companies.forEach(c => _pipData[c.id] = c);
+
+  const total    = companies.reduce((s,c)=>s+c.scored,0);
+  const totalRaw = companies.reduce((s,c)=>s+c.raw,0);
+  const sdrDeals = companies.filter(c=>c.sdrSource);
+  const noOwner  = companies.filter(c=>c.needsOwner);
+  const ltColors = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji  = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  const BLOCK_LBL= {day1:'Day 1',rooftop:'Rooftop',day2:'Day 2',day3breakfast:'Day 3 AM',day3:'Day 3'};
 
   // KPIs
   document.getElementById('pip-kpis').innerHTML = [
-    {label:'Companies',    value: companies.length,          color:'#fff',          unit:''},
-    {label:'Scored Pipeline', value: fmt(total),             color:'var(--accent)', unit:''},
-    {label:'SDR Attributed',  value: sdrDeals.length+' deals', color:'var(--accent)', unit:''},
-    {label:'Needs Owner',  value: noOwner.length+' entries', color: noOwner.length?'var(--hot)':'var(--green)', unit:''},
+    {label:'Companies',       value:companies.length,           color:'#fff'},
+    {label:'Scored Pipeline', value:fmt(total),                 color:'var(--accent)', sub:'raw '+fmt(totalRaw)},
+    {label:'SDR Attributed',  value:sdrDeals.length+' deals',   color:'var(--accent)'},
+    {label:'Needs Owner',     value:noOwner.length+' entries',  color:noOwner.length?'var(--hot)':'var(--green)'},
   ].map(k=>`
     <div class="card" style="padding:14px 16px">
       <div style="font-size:8px;letter-spacing:3px;color:var(--muted);margin-bottom:6px">${k.label.toUpperCase()}</div>
       <div class="big" style="font-size:28px;color:${k.color};line-height:1">${k.value}</div>
-      ${k.label==='Scored Pipeline'?`<div style="font-size:9px;color:var(--muted);margin-top:4px">raw ${fmt(totalRaw)}</div>`:''}
+      ${k.sub?`<div style="font-size:9px;color:var(--muted);margin-top:4px">${k.sub}</div>`:''}
     </div>`).join('');
 
-  // Filter pills
-  const filters = [
+  // Filters
+  document.getElementById('pip-filters').innerHTML = [
     {id:'all',     label:'All · '+companies.length},
     {id:'sdr',     label:'SDR Attributed · '+sdrDeals.length},
     {id:'noowner', label:'⚠ Needs Owner · '+noOwner.length},
-  ];
-  document.getElementById('pip-filters').innerHTML = filters.map(f=>`
-    <button class="block-pill ${pipFilter===f.id?'active':''}" onclick="setPipFilter('${f.id}')">${f.label}</button>`).join('');
+  ].map(f=>`<button class="block-pill ${pipFilter===f.id?'active':''}" onclick="setPipFilter('${f.id}')">${f.label}</button>`).join('');
 
-  // Filtered list
   let list = companies;
-  if (pipFilter === 'sdr')     list = sdrDeals;
-  if (pipFilter === 'noowner') list = noOwner;
+  if (pipFilter==='sdr')     list = sdrDeals;
+  if (pipFilter==='noowner') list = noOwner;
 
-  if (!list.length) {
-    document.getElementById('pip-list').innerHTML = '<div class="empty">NO ENTRIES MATCH THIS FILTER</div>';
-    return;
-  }
+  if (!list.length) { document.getElementById('pip-list').innerHTML='<div class="empty">NO ENTRIES MATCH THIS FILTER</div>'; return; }
+
+  // Build owner options (sales only — SDRs are never owners)
+  const ownerGroups = `
+    <optgroup label="Booth Team">${BOOTH.map(m=>`<option>${m}</option>`).join('')}</optgroup>
+    <optgroup label="Meetings Team">${MEETINGS.map(m=>`<option>${m}</option>`).join('')}</optgroup>`;
 
   document.getElementById('pip-list').innerHTML = list.map(c => {
-    const rowClass = c.needsOwner ? 'pip-row flag-owner' : c.sdrSource ? 'pip-row flag-sdr' : 'pip-row';
-    const editClick = `openEditModal('${c.id}','${c.owner}')`;
+    const rowClass   = c.needsOwner?'pip-row flag-owner':c.sdrSource?'pip-row flag-sdr':'pip-row';
     const teamBadge  = `<span class="badge badge-${c.team}">${c.team.toUpperCase()}</span>`;
     const ltBadge    = `<span class="badge badge-${c.leadType}">${ltEmoji[c.leadType]} ${c.leadType.toUpperCase()}</span>`;
-    const sdrBadge   = c.sdrSource ? `<span class="badge badge-sdr-src">SDR: ${c.sdrSource}</span>` : '';
-    const ownerBadge = c.needsOwner ? `<span class="badge badge-noowner">⚠ NEEDS OWNER</span>` : '';
-    const blockLabel = BLOCK_LBL[c.block] || c.block;
+    const sdrBadge   = c.sdrSource?`<span class="badge badge-sdr-src">SDR: ${c.sdrSource}</span>`:'';
+    const ownerBadge = c.needsOwner?`<span class="badge badge-noowner">⚠ NEEDS OWNER</span>`:'';
+    const sid = CSS.escape(c.id);
     return `
-    <div class="${rowClass}" onclick="${editClick}" title="Click to edit">
-      <div>
-        <div class="pip-co">${c.company}</div>
-        ${c.note ? `<div class="pip-note">${c.note}</div>` : ''}
-        <div class="pip-badges" style="margin-top:5px">${teamBadge}${ltBadge}${sdrBadge}${ownerBadge}</div>
+    <div id="pip-item-${sid}">
+      <div class="${rowClass}" onclick="togglePipEdit('${c.id}')">
+        <div>
+          <div class="pip-co">${c.company}</div>
+          ${c.note?`<div class="pip-note">${c.note}</div>`:''}
+          <div class="pip-badges" style="margin-top:5px">${teamBadge}${ltBadge}${sdrBadge}${ownerBadge}</div>
+        </div>
+        <div><div class="pip-owner">${c.owner}</div><div style="font-size:9px;color:var(--muted2);margin-top:2px">${BLOCK_LBL[c.block]||c.block}</div></div>
+        <div></div>
+        <div class="pip-val">
+          <div class="scored" style="color:${ltColors[c.leadType]}">${fmt(c.scored)}</div>
+          <div class="raw">raw ${fmt(c.raw)}</div>
+          <div style="font-size:9px;color:var(--muted2);margin-top:5px;letter-spacing:1px">✎ edit</div>
+        </div>
       </div>
-      <div>
-        <div class="pip-owner">${c.owner}</div>
-        <div style="font-size:9px;color:var(--muted2);margin-top:2px">${blockLabel}</div>
-      </div>
-      <div style="font-size:9px;color:var(--muted);letter-spacing:1px"></div>
-      <div class="pip-val">
-        <div class="scored" style="color:${ltColors[c.leadType]}">${fmt(c.scored)}</div>
-        <div class="raw">raw ${fmt(c.raw)}</div>
+      <div id="pip-edit-${sid}" style="display:none;background:var(--bg4);border:1px solid var(--accent)33;border-top:none;padding:18px 20px;margin-bottom:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0"><label>Company</label><input type="text" id="ef-co-${sid}" placeholder="Company name..."></div>
+          <div class="field" style="margin-bottom:0"><label>Owner</label><select id="ef-own-${sid}">${ownerGroups}</select></div>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>Lead Type</label>
+          <div class="lead-selector" id="ef-lt-${sid}" data-lead="${c.leadType}">
+            ${['hot','warm','nurture'].map(lt=>`<button class="lead-btn ${lt===c.leadType?'active-'+lt:''}" data-lt="${lt}" onclick="setILT('${c.id}','${lt}');event.stopPropagation()"><span class="emoji">${ltEmoji[lt]}</span><span class="name">${lt.toUpperCase()}</span><span class="pct">${{hot:'100%',warm:'75%',nurture:'50%'}[lt]}</span></button>`).join('')}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0"><label>Size</label>
+            <select id="ef-sz-${sid}" onchange="updateILS('${c.id}')">
+              ${Object.entries(TSHIRT_LABELS).map(([v,l])=>`<option value="${v}">${l} — ${fmt(parseInt(v))}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0"><label>SDR Source</label>
+            <select id="ef-sdr-${sid}">
+              <option value="">— None —</option>
+              ${SDR.map(s=>`<option>${s}</option>`).join('')}
+            </select>
+          </div>
+          <div><label style="display:block;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:5px">SCORED</label>
+            <div style="background:var(--bg3);border:1px solid var(--border);padding:9px 12px;text-align:center">
+              <div style="font-family:'Bebas Neue';font-size:20px;line-height:1" id="ef-sc-${sid}">${fmt(c.scored)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:14px"><label>Note</label><input type="text" id="ef-nt-${sid}" placeholder="Notes..."></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary" style="margin-top:0;max-width:160px" onclick="savePipEdit('${c.id}');event.stopPropagation()">✓ Save</button>
+          <button class="btn-ghost" onclick="closePipEdit('${c.id}');event.stopPropagation()">Cancel</button>
+          <div class="status" id="ef-st-${sid}" style="display:none;margin:0;flex:1;align-self:center"></div>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
 
 function setPipFilter(f) { pipFilter = f; renderPipeline(); }
+
+function togglePipEdit(id) {
+  const sid   = CSS.escape(id);
+  const panel = document.getElementById('pip-edit-' + sid);
+  if (!panel) return;
+  const opening = panel.style.display === 'none';
+  // Close all open panels
+  document.querySelectorAll('[id^="pip-edit-"]').forEach(el => el.style.display = 'none');
+  if (!opening) return;
+  // Populate fields from cached data
+  const c = _pipData[id];
+  if (!c) return;
+  document.getElementById('ef-co-'+sid).value  = c.company;
+  document.getElementById('ef-own-'+sid).value = c.owner;
+  document.getElementById('ef-sz-'+sid).value  = String(c.raw);
+  document.getElementById('ef-sdr-'+sid).value = c.sdrSource || '';
+  document.getElementById('ef-nt-'+sid).value  = c.note || '';
+  const ltEl = document.getElementById('ef-lt-'+sid);
+  if (ltEl) ltEl.dataset.lead = c.leadType;
+  ltEl.querySelectorAll('.lead-btn').forEach(b =>
+    b.className = 'lead-btn'+(b.dataset.lt===c.leadType?' active-'+c.leadType:''));
+  document.getElementById('ef-sc-'+sid).textContent = fmt(c.scored);
+  document.getElementById('ef-st-'+sid).style.display = 'none';
+  panel.style.display = 'block';
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function closePipEdit(id) {
+  const panel = document.getElementById('pip-edit-'+CSS.escape(id));
+  if (panel) panel.style.display = 'none';
+}
+
+function setILT(id, lt) { // set inline lead type
+  const sid = CSS.escape(id);
+  const ltEl = document.getElementById('ef-lt-'+sid);
+  if (!ltEl) return;
+  ltEl.dataset.lead = lt;
+  ltEl.querySelectorAll('.lead-btn').forEach(b => b.className='lead-btn'+(b.dataset.lt===lt?' active-'+lt:''));
+  updateILS(id);
+}
+
+function updateILS(id) { // update inline scored display
+  const sid = CSS.escape(id);
+  const lt  = document.getElementById('ef-lt-'+sid)?.dataset.lead || 'warm';
+  const raw = parseInt(document.getElementById('ef-sz-'+sid)?.value) || 250000;
+  const el  = document.getElementById('ef-sc-'+sid);
+  if (el) el.textContent = fmt(Math.round(raw * LEAD_TYPES[lt].score));
+}
+
+async function savePipEdit(id) {
+  const sid = CSS.escape(id);
+  const c   = _pipData[id];
+  if (!c) return;
+
+  const company   = document.getElementById('ef-co-'+sid).value.trim();
+  const newOwner  = document.getElementById('ef-own-'+sid).value;
+  const raw       = parseInt(document.getElementById('ef-sz-'+sid).value);
+  const sdrSource = document.getElementById('ef-sdr-'+sid).value;
+  const note      = document.getElementById('ef-nt-'+sid).value.trim();
+  const leadType  = document.getElementById('ef-lt-'+sid).dataset.lead;
+  const scored    = Math.round(raw * LEAD_TYPES[leadType].score);
+  const size      = TSHIRT_LABELS[raw] || 'M';
+  const stEl      = document.getElementById('ef-st-'+sid);
+
+  stEl.className='status status-load'; stEl.textContent='Saving…'; stEl.style.display='block';
+
+  // Update local data
+  const oldOwner = c.owner;
+  const entry    = data[oldOwner]?.entries.find(e=>e.id===id);
+  if (!entry) { stEl.className='status status-err'; stEl.textContent='Entry not found.'; return; }
+  const updated  = {...entry, company, raw, scored, leadType, size, sdrSource, note};
+
+  if (newOwner !== oldOwner) {
+    const idx = data[oldOwner].entries.indexOf(entry);
+    data[oldOwner].scored -= entry.scored; data[oldOwner].raw -= entry.raw; data[oldOwner].eng--;
+    data[oldOwner].entries.splice(idx, 1);
+    data[newOwner].scored += scored; data[newOwner].raw += raw; data[newOwner].eng++;
+    data[newOwner].entries.push(updated);
+  } else {
+    const idx = data[oldOwner].entries.findIndex(e=>e.id===id);
+    data[oldOwner].scored += scored - entry.scored;
+    data[oldOwner].raw    += raw    - entry.raw;
+    data[oldOwner].entries[idx] = updated;
+  }
+  saveToStorage();
+
+  // Patch Supabase
+  const team = BOOTH.includes(newOwner)?'Booth':SDR.includes(newOwner)?'SDR':'Meetings';
+  await sbPatch(id, {company, member:newOwner, team, lead_type:leadType, size_label:size, raw, scored, sdr_source:sdrSource, note});
+
+  stEl.className='status status-ok'; stEl.textContent='✓ Saved!';
+  setTimeout(() => {
+    renderAll();
+    renderPipeline();
+    showFlash('✓ '+(company||'Opportunity')+' updated');
+  }, 500);
+}
 
 function renderAll() {
   const boothS = BOOTH.reduce((s,n)=>s+data[n].scored,0);
@@ -1235,7 +1358,7 @@ async function sbPatch(entryId, body) {
   }
 }
 
-/* ── Edit Opportunity Modal ────────────────────────────────────── */
+/* ── Edit Opportunity Modal (kept for potential future use) ─────── */
 let _editCtx = null;
 let _editLead = 'hot';
 
