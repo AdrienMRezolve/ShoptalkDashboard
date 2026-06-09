@@ -162,6 +162,28 @@
   .section-gap { margin-bottom: 16px; }
   .row-between { display: flex; justify-content: space-between; align-items: center; }
   .empty { color: var(--border2); font-size: 12px; text-align: center; padding: 32px 0; letter-spacing: 2px; }
+
+  /* PIPELINE TAB */
+  .pip-row { background: var(--bg3); border: 1px solid var(--border); padding: 14px 16px; margin-bottom: 8px; display: grid; grid-template-columns: 2fr 1.2fr 1fr auto; gap: 12px; align-items: center; transition: border-color 0.15s; }
+  .pip-row:hover { border-color: var(--border2); }
+  .pip-row.flag-owner { border-left: 3px solid var(--hot); }
+  .pip-row.flag-sdr   { border-left: 3px solid var(--accent); }
+  .pip-co   { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pip-note { font-size: 9px; color: var(--muted2); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+  .pip-owner { font-size: 11px; color: var(--muted); }
+  .pip-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .badge { display: inline-block; padding: 2px 6px; font-size: 8px; letter-spacing: 1px; font-weight: 500; }
+  .badge-booth    { background: #ff6b3522; color: var(--orange); }
+  .badge-meetings { background: #a855f722; color: var(--purple); }
+  .badge-sdr      { background: #00e5ff22; color: var(--accent); }
+  .badge-sdr-src  { background: #00e5ff11; color: var(--accent); border: 1px solid var(--accent); }
+  .badge-hot      { background: #ff4d4d22; color: var(--hot); }
+  .badge-warm     { background: #f5a62322; color: var(--warm); }
+  .badge-nurture  { background: #4a90e222; color: var(--nurture); }
+  .badge-noowner  { background: #ff525222; color: var(--hot); }
+  .pip-val { text-align: right; }
+  .pip-val .scored { font-family: 'Bebas Neue'; font-size: 20px; line-height: 1; }
+  .pip-val .raw    { font-size: 9px; color: var(--muted); margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -240,6 +262,7 @@
 <div class="tabs">
   <button class="tab active" onclick="showTab('dashboard')">📊 Overview</button>
   <button class="tab" onclick="showTab('log')">➕ Log Entry</button>
+  <button class="tab" onclick="showTab('pipeline')">💼 Pipeline</button>
   <button class="tab" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
   <button class="tab" onclick="showTab('blocks')">📅 By Block</button>
 </div>
@@ -494,6 +517,16 @@
   <div id="panel-blocks" class="panel">
     <div style="margin-bottom:16px" id="block-pills"></div>
     <div id="block-content"></div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div id="panel-pipeline" class="panel">
+    <!-- KPI strip -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px" id="pip-kpis"></div>
+    <!-- Filters -->
+    <div style="margin-bottom:14px" id="pip-filters"></div>
+    <!-- Company list -->
+    <div id="pip-list"></div>
   </div>
 
 </div>
@@ -759,10 +792,107 @@ async function resetAll() {
 }
 
 function showTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','leaderboard','blocks'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','pipeline','leaderboard','blocks'][i]===name));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
+  if (name === 'pipeline') renderPipeline();
 }
+
+let pipFilter = 'all';
+
+function renderPipeline() {
+  // Build company-level view from all member entries
+  const companies = [];
+  ALL.forEach(n => {
+    const team = SDR.includes(n) ? 'sdr' : BOOTH.includes(n) ? 'booth' : 'meetings';
+    data[n].entries.forEach(e => {
+      if (!e.company) return;
+      companies.push({
+        company:    e.company,
+        owner:      n,
+        team,
+        sdrSource:  e.sdrSource || '',
+        leadType:   e.leadType,
+        raw:        e.raw,
+        scored:     e.scored,
+        block:      e.block,
+        note:       e.note || '',
+        needsOwner: SDR.includes(n)
+      });
+    });
+  });
+
+  // Sort by scored desc
+  companies.sort((a,b) => b.scored - a.scored);
+
+  const total      = companies.reduce((s,c)=>s+c.scored,0);
+  const totalRaw   = companies.reduce((s,c)=>s+c.raw,0);
+  const sdrDeals   = companies.filter(c=>c.sdrSource);
+  const noOwner    = companies.filter(c=>c.needsOwner);
+  const ltColors   = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji    = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  const BLOCK_LBL  = {day1:'Day 1',rooftop:'Rooftop',day2:'Day 2',day3breakfast:'Day 3 AM',day3:'Day 3'};
+
+  // KPIs
+  document.getElementById('pip-kpis').innerHTML = [
+    {label:'Companies',    value: companies.length,          color:'#fff',          unit:''},
+    {label:'Scored Pipeline', value: fmt(total),             color:'var(--accent)', unit:''},
+    {label:'SDR Attributed',  value: sdrDeals.length+' deals', color:'var(--accent)', unit:''},
+    {label:'Needs Owner',  value: noOwner.length+' entries', color: noOwner.length?'var(--hot)':'var(--green)', unit:''},
+  ].map(k=>`
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:8px;letter-spacing:3px;color:var(--muted);margin-bottom:6px">${k.label.toUpperCase()}</div>
+      <div class="big" style="font-size:28px;color:${k.color};line-height:1">${k.value}</div>
+      ${k.label==='Scored Pipeline'?`<div style="font-size:9px;color:var(--muted);margin-top:4px">raw ${fmt(totalRaw)}</div>`:''}
+    </div>`).join('');
+
+  // Filter pills
+  const filters = [
+    {id:'all',     label:'All · '+companies.length},
+    {id:'sdr',     label:'SDR Attributed · '+sdrDeals.length},
+    {id:'noowner', label:'⚠ Needs Owner · '+noOwner.length},
+  ];
+  document.getElementById('pip-filters').innerHTML = filters.map(f=>`
+    <button class="block-pill ${pipFilter===f.id?'active':''}" onclick="setPipFilter('${f.id}')">${f.label}</button>`).join('');
+
+  // Filtered list
+  let list = companies;
+  if (pipFilter === 'sdr')     list = sdrDeals;
+  if (pipFilter === 'noowner') list = noOwner;
+
+  if (!list.length) {
+    document.getElementById('pip-list').innerHTML = '<div class="empty">NO ENTRIES MATCH THIS FILTER</div>';
+    return;
+  }
+
+  document.getElementById('pip-list').innerHTML = list.map(c => {
+    const rowClass = c.needsOwner ? 'pip-row flag-owner' : c.sdrSource ? 'pip-row flag-sdr' : 'pip-row';
+    const teamBadge  = `<span class="badge badge-${c.team}">${c.team.toUpperCase()}</span>`;
+    const ltBadge    = `<span class="badge badge-${c.leadType}">${ltEmoji[c.leadType]} ${c.leadType.toUpperCase()}</span>`;
+    const sdrBadge   = c.sdrSource ? `<span class="badge badge-sdr-src">SDR: ${c.sdrSource}</span>` : '';
+    const ownerBadge = c.needsOwner ? `<span class="badge badge-noowner">⚠ NEEDS OWNER</span>` : '';
+    const blockLabel = BLOCK_LBL[c.block] || c.block;
+    return `
+    <div class="${rowClass}">
+      <div>
+        <div class="pip-co">${c.company}</div>
+        ${c.note ? `<div class="pip-note">${c.note}</div>` : ''}
+        <div class="pip-badges" style="margin-top:5px">${teamBadge}${ltBadge}${sdrBadge}${ownerBadge}</div>
+      </div>
+      <div>
+        <div class="pip-owner">${c.owner}</div>
+        <div style="font-size:9px;color:var(--muted2);margin-top:2px">${blockLabel}</div>
+      </div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px"></div>
+      <div class="pip-val">
+        <div class="scored" style="color:${ltColors[c.leadType]}">${fmt(c.scored)}</div>
+        <div class="raw">raw ${fmt(c.raw)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setPipFilter(f) { pipFilter = f; renderPipeline(); }
 
 function renderAll() {
   const boothS = BOOTH.reduce((s,n)=>s+data[n].scored,0);
