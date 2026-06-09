@@ -164,8 +164,14 @@
   .empty { color: var(--border2); font-size: 12px; text-align: center; padding: 32px 0; letter-spacing: 2px; }
 
   /* PIPELINE TAB */
-  .pip-row { background: var(--bg3); border: 1px solid var(--border); padding: 14px 16px; margin-bottom: 8px; display: grid; grid-template-columns: 2fr 1.2fr 1fr auto; gap: 12px; align-items: center; transition: border-color 0.15s; }
-  .pip-row:hover { border-color: var(--border2); }
+  .pip-row { background: var(--bg3); border: 1px solid var(--border); padding: 14px 16px; margin-bottom: 8px; display: grid; grid-template-columns: 2fr 1.2fr 1fr auto; gap: 12px; align-items: center; transition: border-color 0.15s; cursor: pointer; }
+  .pip-row:hover { border-color: var(--border2); background: #132b3d; }
+
+  /* EDIT MODAL */
+  .modal-overlay { position:fixed; inset:0; background:#0a1828cc; z-index:500; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+  .modal-box { background:var(--bg2); border:1px solid var(--border2); padding:28px 30px; width:100%; max-width:460px; max-height:90vh; overflow-y:auto; position:relative; }
+  .modal-title { font-size:8px; letter-spacing:3px; color:var(--accent); margin-bottom:20px; text-transform:uppercase; }
+  .modal-company { font-size:18px; font-weight:600; color:var(--text); margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--border); }
   .pip-row.flag-owner { border-left: 3px solid var(--hot); }
   .pip-row.flag-sdr   { border-left: 3px solid var(--accent); }
   .pip-co   { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -531,6 +537,74 @@
 
 </div>
 
+<!-- EDIT OPPORTUNITY MODAL -->
+<div id="edit-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal-box">
+    <div class="modal-title">Edit Opportunity</div>
+
+    <div class="field">
+      <label>Company</label>
+      <input type="text" id="em-company" placeholder="Company name...">
+    </div>
+
+    <div class="field">
+      <label>Owner</label>
+      <select id="em-owner">
+        <optgroup label="Booth Team">
+          <option>Luca</option><option>Adrien</option><option>Lee</option><option>Leonard</option><option>Javed</option>
+        </optgroup>
+        <optgroup label="Meetings Team">
+          <option>Penelope</option><option>Zohra</option><option>Mara</option><option>Greg</option><option>Rawad</option><option>Georg</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Lead Type</label>
+      <div class="lead-selector" id="em-lead-btns">
+        <button class="lead-btn" data-etype="hot" onclick="selectEditLead('hot')"><span class="emoji">🔥</span><span class="name">HOT</span><span class="pct">100%</span></button>
+        <button class="lead-btn" data-etype="warm" onclick="selectEditLead('warm')"><span class="emoji">🟡</span><span class="name">WARM</span><span class="pct">75%</span></button>
+        <button class="lead-btn" data-etype="nurture" onclick="selectEditLead('nurture')"><span class="emoji">🌱</span><span class="name">NURTURE</span><span class="pct">50%</span></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>T-Shirt Size</label>
+      <select id="em-size">
+        <option value="50000">XS — $50k</option>
+        <option value="100000">S — $100k</option>
+        <option value="250000">M — $250k</option>
+        <option value="500000">L — $500k</option>
+        <option value="1000000">XL — $1M</option>
+      </select>
+    </div>
+
+    <div class="score-preview" id="em-preview">
+      <span class="label">SCORED VALUE</span>
+      <span class="value" id="em-preview-val">$250k</span>
+    </div>
+
+    <div class="field" style="margin-top:13px">
+      <label>SDR Source <span style="font-size:8px;color:var(--muted2);letter-spacing:0">(optional)</span></label>
+      <select id="em-sdr">
+        <option value="">— None —</option>
+        <option>Zoran</option><option>Miriyam</option><option>Christina</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Note</label>
+      <input type="text" id="em-note" placeholder="Notes...">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn-primary" style="margin-top:0;flex:1" onclick="saveEdit()">✓ Save Changes</button>
+      <button class="btn-ghost" onclick="closeEditModal()">Cancel</button>
+    </div>
+    <div class="status" id="em-status"></div>
+  </div>
+</div>
+
 <script>
 const BOOTH    = ["Luca","Adrien","Lee","Leonard","Javed"];
 const SDR      = ["Zoran","Miriyam","Christina"];
@@ -808,6 +882,7 @@ function renderPipeline() {
     data[n].entries.forEach(e => {
       if (!e.company) return;
       companies.push({
+        id:         e.id,
         company:    e.company,
         owner:      n,
         team,
@@ -867,13 +942,14 @@ function renderPipeline() {
 
   document.getElementById('pip-list').innerHTML = list.map(c => {
     const rowClass = c.needsOwner ? 'pip-row flag-owner' : c.sdrSource ? 'pip-row flag-sdr' : 'pip-row';
+    const editClick = `openEditModal('${c.id}','${c.owner}')`;
     const teamBadge  = `<span class="badge badge-${c.team}">${c.team.toUpperCase()}</span>`;
     const ltBadge    = `<span class="badge badge-${c.leadType}">${ltEmoji[c.leadType]} ${c.leadType.toUpperCase()}</span>`;
     const sdrBadge   = c.sdrSource ? `<span class="badge badge-sdr-src">SDR: ${c.sdrSource}</span>` : '';
     const ownerBadge = c.needsOwner ? `<span class="badge badge-noowner">⚠ NEEDS OWNER</span>` : '';
     const blockLabel = BLOCK_LBL[c.block] || c.block;
     return `
-    <div class="${rowClass}">
+    <div class="${rowClass}" onclick="${editClick}" title="Click to edit">
       <div>
         <div class="pip-co">${c.company}</div>
         ${c.note ? `<div class="pip-note">${c.note}</div>` : ''}
@@ -1144,6 +1220,113 @@ function renderBlocks() {
 }
 
 function setBlock(id) { activeBlock = id; renderBlocks(); }
+
+/* ── Supabase PATCH helper ─────────────────────────────────────── */
+async function sbPatch(entryId, body) {
+  try {
+    const res = await fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?id=eq.'+entryId, {
+      method:'PATCH',
+      headers:{...SB_HDR,'Prefer':'return=minimal'},
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(res.status);
+  } catch(e) {
+    pendingOps.push({type:'patch', id:entryId, body}); savePending();
+  }
+}
+
+/* ── Edit Opportunity Modal ────────────────────────────────────── */
+let _editCtx = null;
+let _editLead = 'hot';
+
+function openEditModal(entryId, member) {
+  const entry = (data[member]?.entries || []).find(e => e.id === entryId);
+  if (!entry) return;
+  _editCtx  = { entryId, member, entry };
+  _editLead = entry.leadType;
+
+  document.getElementById('em-company').value = entry.company || '';
+  document.getElementById('em-owner').value   = member;
+  document.getElementById('em-size').value     = String(entry.raw);
+  document.getElementById('em-sdr').value      = entry.sdrSource || '';
+  document.getElementById('em-note').value     = entry.note || '';
+  selectEditLead(entry.leadType);
+  updateEditPreview();
+
+  document.getElementById('em-status').style.display = 'none';
+  document.getElementById('edit-overlay').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-overlay').style.display = 'none';
+  _editCtx = null;
+}
+
+function selectEditLead(type) {
+  _editLead = type;
+  document.querySelectorAll('#em-lead-btns .lead-btn').forEach(b => {
+    b.className = 'lead-btn' + (b.dataset.etype === type ? ' active-'+type : '');
+  });
+  updateEditPreview();
+}
+
+function updateEditPreview() {
+  const raw    = parseInt(document.getElementById('em-size').value) || 250000;
+  const scored = Math.round(raw * LEAD_TYPES[_editLead].score);
+  const el     = document.getElementById('em-preview-val');
+  el.textContent = fmt(scored);
+  el.style.color = LEAD_TYPES[_editLead].color;
+}
+document.getElementById('em-size').addEventListener('change', updateEditPreview);
+
+async function saveEdit() {
+  if (!_editCtx) return;
+  const { entryId, member: oldMember, entry } = _editCtx;
+
+  const company   = document.getElementById('em-company').value.trim();
+  const newMember = document.getElementById('em-owner').value;
+  const raw       = parseInt(document.getElementById('em-size').value);
+  const sdrSource = document.getElementById('em-sdr').value;
+  const note      = document.getElementById('em-note').value.trim();
+  const leadType  = _editLead;
+  const scored    = Math.round(raw * LEAD_TYPES[leadType].score);
+  const size      = TSHIRT_LABELS[raw] || 'M';
+
+  const statusEl = document.getElementById('em-status');
+  statusEl.className = 'status status-load';
+  statusEl.textContent = 'Saving…'; statusEl.style.display = 'block';
+
+  // ── Update local data ──────────────────────────────────────────
+  const idx = data[oldMember].entries.findIndex(e => e.id === entryId);
+  if (idx < 0) { statusEl.className='status status-err'; statusEl.textContent='Entry not found.'; return; }
+
+  const updated = {...entry, company, raw, scored, leadType, size, sdrSource, note};
+
+  if (newMember !== oldMember) {
+    // Move entry between members
+    data[oldMember].scored -= entry.scored; data[oldMember].raw -= entry.raw; data[oldMember].eng--;
+    data[oldMember].entries.splice(idx, 1);
+    data[newMember].scored += scored;       data[newMember].raw += raw;       data[newMember].eng++;
+    data[newMember].entries.push(updated);
+  } else {
+    data[oldMember].scored += scored - entry.scored;
+    data[oldMember].raw    += raw    - entry.raw;
+    data[oldMember].entries[idx] = updated;
+  }
+  saveToStorage();
+
+  // ── PATCH Supabase ─────────────────────────────────────────────
+  const team = BOOTH.includes(newMember)?'Booth':SDR.includes(newMember)?'SDR':'Meetings';
+  await sbPatch(entryId, { company, member: newMember, team, lead_type: leadType, size_label: size, raw, scored, sdr_source: sdrSource, note });
+
+  renderAll();
+  if (document.getElementById('panel-pipeline').classList.contains('active')) renderPipeline();
+
+  statusEl.className = 'status status-ok';
+  statusEl.textContent = '✓ Saved!';
+  setTimeout(() => closeEditModal(), 700);
+  showFlash('✓ ' + (company||'Opportunity') + ' updated');
+}
 
 /* ---------- Edit / Delete individual entries ---------- */
 function findEntry(name, id) {
