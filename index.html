@@ -254,7 +254,7 @@
     <!-- Team cards -->
     <div class="grid2 section-gap">
       <div class="card" id="booth-card" style="border-color:#ff6b3533">
-        <div class="card-title" style="color:var(--orange)">Booth Team · $750k × 8</div>
+        <div class="card-title" style="color:var(--orange)">Booth Team · $750k × 5</div>
         <div class="row-between" style="margin-bottom:12px;align-items:flex-end">
           <div>
             <div class="big" style="font-size:34px" id="booth-scored">$0</div>
@@ -270,7 +270,7 @@
         <div style="margin-top:14px" id="booth-members"></div>
       </div>
       <div class="card" id="mtg-card" style="border-color:#a855f733">
-        <div class="card-title" style="color:var(--purple)">Meetings Team · $1.5M × 7</div>
+        <div class="card-title" style="color:var(--purple)">Meetings Team · $1.5M × 6</div>
         <div class="row-between" style="margin-bottom:12px;align-items:flex-end">
           <div>
             <div class="big" style="font-size:34px" id="mtg-scored">$0</div>
@@ -284,6 +284,36 @@
         <div class="bar-track" style="height:6px"><div class="bar-fill" id="mtg-bar" style="background:var(--purple);width:0%"></div></div>
         <div class="progress-labels"><span id="mtg-pct">0%</span><span id="mtg-rem">$10.5M to go</span></div>
         <div style="margin-top:14px" id="mtg-members"></div>
+      </div>
+    </div>
+
+    <!-- SDR card -->
+    <div class="section-gap">
+      <div class="card" id="sdr-card" style="border-color:#00d4ff33">
+        <div class="card-title" style="color:var(--accent)">SDR Team · $750k × 3</div>
+        <div class="grid2" style="gap:14px;align-items:flex-end;margin-bottom:12px">
+          <div>
+            <div class="big" style="font-size:34px" id="sdr-scored">$0</div>
+            <div style="font-size:9px;color:var(--muted)">own scored pipeline</div>
+          </div>
+          <div style="display:flex;gap:24px;text-align:right">
+            <div>
+              <div style="font-size:8px;color:var(--muted);letter-spacing:2px">OWN TARGET</div>
+              <div class="big" style="font-size:16px;color:var(--muted)" id="sdr-target-label">$2.25M</div>
+            </div>
+            <div>
+              <div style="font-size:8px;color:var(--muted);letter-spacing:2px">ATTRIBUTED</div>
+              <div class="big" style="font-size:16px;color:var(--accent)" id="sdr-attributed">$0</div>
+            </div>
+            <div>
+              <div style="font-size:8px;color:var(--muted);letter-spacing:2px">MTGs SOURCED</div>
+              <div class="big" style="font-size:16px;color:var(--green)" id="sdr-sourced-count">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="bar-track" style="height:5px"><div class="bar-fill" id="sdr-bar" style="background:var(--accent);width:0%"></div></div>
+        <div class="progress-labels"><span id="sdr-pct">0%</span><span id="sdr-rem">$2.25M to go</span></div>
+        <div style="margin-top:14px" id="sdr-members"></div>
       </div>
     </div>
 
@@ -339,7 +369,10 @@
             <option value="">— Select member —</option>
             <optgroup label="Booth Team">
               <option>Luca</option><option>Adrien</option><option>Lee</option>
-              <option>Christina</option><option>Miriyam</option><option>Zoran</option><option>Leonard</option><option>Javed</option>
+              <option>Leonard</option><option>Javed</option>
+            </optgroup>
+            <optgroup label="SDR Team">
+              <option>Zoran</option><option>Miriyam</option><option>Christina</option>
             </optgroup>
             <optgroup label="Meetings Team">
               <option>Penelope</option><option>Zohra</option>
@@ -393,6 +426,15 @@
         <div class="field">
           <label>Company</label>
           <input type="text" id="f-company" placeholder="Company name...">
+        </div>
+        <div class="field">
+          <label>Sourced by SDR <span style="color:var(--muted2);font-size:8px;letter-spacing:1px">(optional)</span></label>
+          <select id="f-sdr">
+            <option value="">— None —</option>
+            <option>Zoran</option>
+            <option>Miriyam</option>
+            <option>Christina</option>
+          </select>
         </div>
         <div class="field">
           <label>Note (optional)</label>
@@ -457,12 +499,14 @@
 </div>
 
 <script>
-const BOOTH = ["Luca","Adrien","Lee","Christina","Miriyam","Zoran","Leonard","Javed"];
+const BOOTH    = ["Luca","Adrien","Lee","Leonard","Javed"];
+const SDR      = ["Zoran","Miriyam","Christina"];
 const MEETINGS = ["Penelope","Zohra","Mara","Greg","Rawad","Georg"];
-const ALL = [...BOOTH, ...MEETINGS];
-const BOOTH_TARGET = BOOTH.length * 750000;
-const MTG_TARGET = MEETINGS.length * 1500000;
-const TOTAL_TARGET = BOOTH_TARGET + MTG_TARGET;
+const ALL = [...BOOTH, ...SDR, ...MEETINGS];
+const BOOTH_TARGET = BOOTH.length * 750000;    // 5 × $750k = $3.75M
+const SDR_TARGET   = SDR.length   * 750000;    // 3 × $750k = $2.25M
+const MTG_TARGET   = MEETINGS.length * 1500000; // 6 × $1.5M = $9.0M
+const TOTAL_TARGET = BOOTH_TARGET + SDR_TARGET + MTG_TARGET;
 const BLOCKS = [
   {id:"day1",label:"Day 1",sub:"Tuesday"},
   {id:"rooftop",label:"Rooftop",sub:"Tuesday Evening"},
@@ -516,13 +560,15 @@ async function sbDel(id) {
 function rowToEntry(r) {
   return { id:r.id, block:r.block, raw:r.raw, scored:r.scored,
            leadType:r.lead_type, size:r.size_label,
-           company:r.company||'', note:r.note||'',
+           company:r.company||'', sdrSource:r.sdr_source||'', note:r.note||'',
            ts: new Date(r.logged_at).getTime() };
 }
 function entryToRow(name, e) {
-  return { id:e.id, member:name, team:BOOTH.includes(name)?'Booth':'Meetings',
+  const team = BOOTH.includes(name)?'Booth':SDR.includes(name)?'SDR':'Meetings';
+  return { id:e.id, member:name, team,
            block:e.block, lead_type:e.leadType, size_label:e.size,
-           raw:e.raw, scored:e.scored, company:e.company||'', note:e.note||'' };
+           raw:e.raw, scored:e.scored, company:e.company||'',
+           sdr_source:e.sdrSource||'', note:e.note||'' };
 }
 
 async function flushPending() {
@@ -625,6 +671,7 @@ function logEntry() {
   const block = document.getElementById('f-block').value;
   const raw = parseInt(document.getElementById('f-size').value);
   const company = document.getElementById("f-company").value.trim();
+  const sdrSource = document.getElementById("f-sdr").value;
   const note = document.getElementById("f-note").value.trim();
   if (!name) { showStatus('Please select a team member', 'err'); return; }
   const lt = LEAD_TYPES[state.leadType];
@@ -632,14 +679,16 @@ function logEntry() {
   data[name].scored += scored;
   data[name].raw += raw;
   data[name].eng++;
-  const entry = {id: newId(), block, raw, scored, leadType: state.leadType, size: TSHIRT_LABELS[raw] || 'M', company, note, ts: Date.now()};
+  const entry = {id: newId(), block, raw, scored, leadType: state.leadType, size: TSHIRT_LABELS[raw] || 'M', company, sdrSource, note, ts: Date.now()};
   data[name].entries.push(entry);
   saveToStorage();
   renderAll();
   sbInsertAsync(name, entry);
-  showFlash("⚡ " + name + " — " + fmt(scored) + " scored (" + state.leadType + ")");
-  showStatus("Logged! " + fmt(scored) + " scored for " + name, 'ok');
+  const sdrNote = sdrSource ? ' · SDR: ' + sdrSource : '';
+  showFlash("⚡ " + name + " — " + fmt(scored) + " scored (" + state.leadType + ")" + sdrNote);
+  showStatus("Logged! " + fmt(scored) + " scored for " + name + sdrNote, 'ok');
   document.getElementById('f-company').value = '';
+  document.getElementById('f-sdr').value = '';
   document.getElementById('f-note').value = '';
   updateRecentCard(name);
 }
@@ -717,8 +766,9 @@ function showTab(name) {
 
 function renderAll() {
   const boothS = BOOTH.reduce((s,n)=>s+data[n].scored,0);
-  const mtgS = MEETINGS.reduce((s,n)=>s+data[n].scored,0);
-  const totalS = boothS + mtgS;
+  const sdrS   = SDR.reduce((s,n)=>s+data[n].scored,0);
+  const mtgS   = MEETINGS.reduce((s,n)=>s+data[n].scored,0);
+  const totalS = boothS + sdrS + mtgS;
   const totalR = ALL.reduce((s,n)=>s+data[n].raw,0);
   const totalE = ALL.reduce((s,n)=>s+data[n].eng,0);
 
@@ -734,6 +784,7 @@ function renderAll() {
   document.getElementById('h-target').textContent = fmt(TOTAL_TARGET);
   document.getElementById('booth-target').textContent = fmt(BOOTH_TARGET);
   document.getElementById('mtg-target').textContent = fmt(MTG_TARGET);
+  document.getElementById('sdr-target-label').textContent = fmt(SDR_TARGET);
   document.getElementById('total-target').textContent = '/ ' + fmt(TOTAL_TARGET);
 
   // Lead type cards
@@ -781,6 +832,40 @@ function renderAll() {
     <div class="mbar">
       <span class="mbar-name">${n}</span>
       <div class="bar-track" style="flex:1;height:5px"><div class="bar-fill" style="width:${pct(data[n].scored,mtgMax)}%;background:var(--purple)"></div></div>
+      <span class="mbar-val">${fmt(data[n].scored)}</span>
+    </div>`).join('');
+
+  // SDR card
+  const sdrMax = Math.max(1, ...SDR.map(n=>data[n].scored));
+  // Meetings attributed to each SDR by other reps (via sdrSource field)
+  const sdrAttr = {};
+  SDR.forEach(n => sdrAttr[n] = {scored:0, eng:0});
+  ALL.forEach(n => data[n].entries.forEach(e => {
+    if (e.sdrSource && sdrAttr[e.sdrSource]) {
+      sdrAttr[e.sdrSource].scored += e.scored;
+      sdrAttr[e.sdrSource].eng++;
+    }
+  }));
+  const totalSdrAttr = SDR.reduce((s,n)=>s+sdrAttr[n].scored,0);
+  const totalSdrSourced = SDR.reduce((s,n)=>s+sdrAttr[n].eng,0);
+  document.getElementById('sdr-scored').textContent = fmt(sdrS);
+  document.getElementById('sdr-scored').style.color = sdrS >= SDR_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('sdr-bar').style.width = pct(sdrS,SDR_TARGET)+'%';
+  document.getElementById('sdr-bar').style.background = sdrS >= SDR_TARGET ? 'var(--green)' : 'var(--accent)';
+  document.getElementById('sdr-pct').textContent = pct(sdrS,SDR_TARGET)+'%';
+  document.getElementById('sdr-rem').textContent = fmt(Math.max(0,SDR_TARGET-sdrS))+' to go';
+  document.getElementById('sdr-attributed').textContent = fmt(totalSdrAttr);
+  document.getElementById('sdr-sourced-count').textContent = totalSdrSourced;
+  document.getElementById('sdr-members').innerHTML = SDR.map(n => `
+    <div class="mbar" style="margin-bottom:10px">
+      <span class="mbar-name" style="width:80px">${n}</span>
+      <div style="flex:1">
+        <div class="bar-track" style="height:5px;margin-bottom:3px"><div class="bar-fill" style="width:${pct(data[n].scored,sdrMax)}%;background:var(--accent)"></div></div>
+        <div style="display:flex;gap:10px;font-size:9px;color:var(--muted)">
+          <span>own: ${fmt(data[n].scored)}</span>
+          ${sdrAttr[n].eng ? '<span style="color:var(--accent)">attributed: '+fmt(sdrAttr[n].scored)+' ('+sdrAttr[n].eng+' mtg)</span>' : ''}
+        </div>
+      </div>
       <span class="mbar-val">${fmt(data[n].scored)}</span>
     </div>`).join('');
 
