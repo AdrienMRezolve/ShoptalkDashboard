@@ -531,6 +531,8 @@
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px" id="pip-kpis"></div>
     <!-- Filters -->
     <div style="margin-bottom:10px" id="pip-filters"></div>
+    <!-- AE filter pills -->
+    <div style="margin-bottom:10px" id="pip-ae-filters"></div>
     <!-- Search -->
     <div style="margin-bottom:14px;position:relative">
       <input id="pip-search" type="text" placeholder="🔍  Search by company name…"
@@ -882,6 +884,7 @@ function showTab(name) {
 
 let pipFilter = 'all';
 let pipSearch = '';
+let pipOwner  = '';
 let _pipList  = []; // ordered list — index used for DOM IDs
 
 function renderPipeline() {
@@ -921,9 +924,22 @@ function renderPipeline() {
     {id:'noowner', label:'⚠ Needs Owner · '+noOwner.length},
   ].map(f=>`<button class="block-pill ${pipFilter===f.id?'active':''}" onclick="setPipFilter('${f.id}')">${f.label}</button>`).join('');
 
+  // AE pills — counts based on pre-search list
+  const AES = [...BOOTH, ...MEETINGS];
+  const baseList = pipFilter==='sdr' ? sdrDeals : pipFilter==='noowner' ? noOwner : companies;
+  document.getElementById('pip-ae-filters').innerHTML =
+    `<span style="font-size:9px;letter-spacing:2px;color:var(--muted);margin-right:8px;vertical-align:middle">AE</span>` +
+    AES.map(ae => {
+      const cnt = baseList.filter(c => c.owner === ae).length;
+      if (!cnt) return '';
+      const active = pipOwner === ae;
+      return `<button class="block-pill${active?' active':''}" onclick="setPipOwner('${ae}')" style="margin-bottom:4px">${ae} · ${cnt}</button>`;
+    }).join('');
+
   let list = companies;
   if (pipFilter==='sdr')     list = sdrDeals;
   if (pipFilter==='noowner') list = noOwner;
+  if (pipOwner)  list = list.filter(c => c.owner === pipOwner);
   if (pipSearch) list = list.filter(c => c.company.toLowerCase().includes(pipSearch.toLowerCase()));
   _pipList = list; // store for index lookup
 
@@ -992,6 +1008,7 @@ function renderPipeline() {
 }
 
 function setPipFilter(f) { pipFilter = f; renderPipeline(); }
+function setPipOwner(ae) { pipOwner = (pipOwner === ae) ? '' : ae; renderPipeline(); }
 function setPipSearch(v) {
   pipSearch = v;
   const clr = document.getElementById('pip-search-clear');
