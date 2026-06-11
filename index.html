@@ -530,7 +530,15 @@
     <!-- KPI strip -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px" id="pip-kpis"></div>
     <!-- Filters -->
-    <div style="margin-bottom:14px" id="pip-filters"></div>
+    <div style="margin-bottom:10px" id="pip-filters"></div>
+    <!-- Search -->
+    <div style="margin-bottom:14px;position:relative">
+      <input id="pip-search" type="text" placeholder="🔍  Search by company name…"
+        oninput="setPipSearch(this.value)"
+        style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:9px 36px 9px 14px;border-radius:6px;outline:none">
+      <button id="pip-search-clear" onclick="clearPipSearch()" title="Clear"
+        style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
     <!-- Company list -->
     <div id="pip-list"></div>
   </div>
@@ -873,6 +881,7 @@ function showTab(name) {
 }
 
 let pipFilter = 'all';
+let pipSearch = '';
 let _pipList  = []; // ordered list — index used for DOM IDs
 
 function renderPipeline() {
@@ -915,7 +924,14 @@ function renderPipeline() {
   let list = companies;
   if (pipFilter==='sdr')     list = sdrDeals;
   if (pipFilter==='noowner') list = noOwner;
+  if (pipSearch) list = list.filter(c => c.company.toLowerCase().includes(pipSearch.toLowerCase()));
   _pipList = list; // store for index lookup
+
+  // keep search input in sync with state
+  const _si = document.getElementById('pip-search');
+  const _sc = document.getElementById('pip-search-clear');
+  if (_si && _si !== document.activeElement) _si.value = pipSearch;
+  if (_sc) _sc.style.display = pipSearch ? 'block' : 'none';
 
   if (!list.length) { document.getElementById('pip-list').innerHTML='<div class="empty">NO ENTRIES MATCH THIS FILTER</div>'; return; }
 
@@ -976,6 +992,23 @@ function renderPipeline() {
 }
 
 function setPipFilter(f) { pipFilter = f; renderPipeline(); }
+function setPipSearch(v) {
+  pipSearch = v;
+  const clr = document.getElementById('pip-search-clear');
+  if (clr) clr.style.display = v ? 'block' : 'none';
+  renderPipeline();
+  // keep cursor in input after re-render
+  const inp = document.getElementById('pip-search');
+  if (inp) { inp.value = v; inp.focus(); inp.setSelectionRange(v.length, v.length); }
+}
+function clearPipSearch() {
+  pipSearch = '';
+  const inp = document.getElementById('pip-search');
+  if (inp) { inp.value = ''; inp.focus(); }
+  const clr = document.getElementById('pip-search-clear');
+  if (clr) clr.style.display = 'none';
+  renderPipeline();
+}
 
 function togglePipEdit(i) {
   const panel = document.getElementById('pep'+i);
