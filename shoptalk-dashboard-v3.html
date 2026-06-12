@@ -670,7 +670,8 @@
       <button class="fu-etab block-pill" onclick="fuSetEmailTab('warm')">Warm Prospect</button>
       <button class="fu-etab block-pill" onclick="fuSetEmailTab('cold')">Early Stage</button>
     </div>
-    <div class="field"><label>Subject</label><input type="text" id="fu-e-subject"></div>
+    <div class="field" style="margin-bottom:4px"><label>Subject</label><input type="text" id="fu-e-subject"></div>
+    <div style="font-size:9px;color:var(--muted);margin-bottom:12px;padding-left:2px">↳ <code style="color:var(--muted2)">[ref:…]</code> tag at end of subject is read by Power Automate to auto-sync status when you send</div>
     <div class="field" style="margin-bottom:0"><label>Body — edit before sending</label>
       <textarea id="fu-e-body" style="min-height:190px;resize:vertical;line-height:1.6;background:var(--bg4);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:9px 12px;width:100%;outline:none"></textarea>
     </div>
@@ -2074,7 +2075,7 @@ function fuSetEmailTab(tab) {
   document.querySelectorAll('.fu-etab').forEach((b,i)=>b.classList.toggle('active',['active','warm','cold'][i]===tab));
   if (_fuEmailEntry) {
     const t=FU_TMPL[tab];
-    document.getElementById('fu-e-subject').value=t.sub(_fuEmailEntry.company,_fuEmailEntry);
+    document.getElementById('fu-e-subject').value=t.sub(_fuEmailEntry.company,_fuEmailEntry)+` [ref:${_fuEmailEntry.id}]`;
     document.getElementById('fu-e-body').value=t.body(_fuEmailEntry.company,_fuEmailEntry,_fuEmailMember);
   }
 }
