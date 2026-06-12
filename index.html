@@ -288,6 +288,7 @@
   <button class="tab" onclick="showTab('followup')">📧 Follow-up</button>
   <button class="tab" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
   <button class="tab" onclick="showTab('blocks')">📅 By Block</button>
+  <button class="tab" onclick="showTab('aesummary')">👥 AE Summary</button>
 </div>
 
 <div class="content">
@@ -540,6 +541,11 @@
   <div id="panel-blocks" class="panel">
     <div style="margin-bottom:16px" id="block-pills"></div>
     <div id="block-content"></div>
+  </div>
+
+  <!-- AE SUMMARY -->
+  <div id="panel-aesummary" class="panel">
+    <div id="aesummary-content"></div>
   </div>
 
   <!-- PIPELINE -->
@@ -977,11 +983,108 @@ async function resetAll() {
 }
 
 function showTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','pipeline','followup','leaderboard','blocks'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','pipeline','followup','leaderboard','blocks','aesummary'][i]===name));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
   if (name === 'pipeline') renderPipeline();
   if (name === 'followup') renderFollowup();
+  if (name === 'aesummary') renderAeSummary();
+}
+
+// ── AE Summary Tab ───────────────────────────────────────────────────────────
+function renderAeSummary() {
+  // All entries across everyone
+  const allEntries = ALL.flatMap(n => (data[n]||{}).entries || []);
+
+  const rows = [];
+  const ae_order = [...BOOTH, ...MEETINGS, ...SDR];
+
+  ae_order.forEach(name => {
+    const entries = (data[name]||{}).entries || [];
+    if (!entries.length) return;
+    const hot      = entries.filter(e => e.leadType === 'hot').length;
+    const warm     = entries.filter(e => e.leadType === 'warm').length;
+    const nurture  = entries.filter(e => e.leadType === 'nurture').length;
+    const scored   = entries.reduce((s,e) => s + (e.scored||0), 0);
+    const raw      = entries.reduce((s,e) => s + (e.raw||0), 0);
+    const contacts = entries.filter(e => e.contactName).length;
+    const sent     = entries.filter(e => e.followedUp).length;
+    const teamLeads = entries.length;
+    const sendRate = teamLeads ? Math.round(sent / teamLeads * 100) : 0;
+    // CC accounts = entries owned by OTHER AEs where ccName contains this person's first name
+    const nameLow  = name.toLowerCase();
+    const ccAccts  = allEntries.filter(e => {
+      if (!e.ccName) return false;
+      const owner = ALL.find(n => (data[n]||{}).entries?.includes(e));
+      if (owner === name) return false; // own entries don't count
+      return e.ccName.toLowerCase().split(/[/,\s]+/).some(p => p === nameLow);
+    }).length;
+    const total = teamLeads + ccAccts;
+    rows.push({ name, hot, warm, nurture, scored, raw, contacts, sent, sendRate, teamLeads, ccAccts, total });
+  });
+
+  const totRow = {
+    name: 'TOTAL',
+    hot:       rows.reduce((s,r) => s+r.hot, 0),
+    warm:      rows.reduce((s,r) => s+r.warm, 0),
+    nurture:   rows.reduce((s,r) => s+r.nurture, 0),
+    scored:    rows.reduce((s,r) => s+r.scored, 0),
+    raw:       rows.reduce((s,r) => s+r.raw, 0),
+    contacts:  rows.reduce((s,r) => s+r.contacts, 0),
+    sent:      rows.reduce((s,r) => s+r.sent, 0),
+    sendRate:  rows.length ? Math.round(rows.reduce((s,r)=>s+r.sent,0) / rows.reduce((s,r)=>s+r.teamLeads,0) * 100) : 0,
+    teamLeads: rows.reduce((s,r) => s+r.teamLeads, 0),
+    ccAccts:   rows.reduce((s,r) => s+r.ccAccts, 0),
+    total:     rows.reduce((s,r) => s+r.total, 0),
+  };
+
+  const fmtK = v => v >= 1000 ? Math.round(v/1000).toLocaleString() : v;
+
+  const cols = [
+    { label: 'AE',           key: 'name',      color: 'var(--text)',    align: 'left'  },
+    { label: 'TEAM LEADS',   key: 'teamLeads', color: 'var(--accent)',  align: 'right' },
+    { label: '🔥 HOT',       key: 'hot',       color: 'var(--hot)',     align: 'right' },
+    { label: '🟡 WARM',      key: 'warm',      color: 'var(--warm)',    align: 'right' },
+    { label: '🌱 NURTURE',   key: 'nurture',   color: 'var(--green)',   align: 'right' },
+    { label: 'SCORED ($K)',  key: 'scored',    color: 'var(--gold)',    align: 'right', fmt: fmtK },
+    { label: 'RAW ($K)',     key: 'raw',       color: 'var(--muted)',   align: 'right', fmt: fmtK },
+    { label: 'CONTACTS',     key: 'contacts',  color: 'var(--text)',    align: 'right' },
+    { label: 'SENT',         key: 'sent',      color: 'var(--green)',   align: 'right' },
+    { label: 'SEND RATE',    key: 'sendRate',  color: 'var(--green)',   align: 'right', fmt: v => v+'%' },
+    { label: 'CC ACCOUNTS',  key: 'ccAccts',   color: '#ce93d8',        align: 'right' },
+    { label: 'TOTAL ACCTS',  key: 'total',     color: 'var(--accent)',  align: 'right' },
+  ];
+
+  const thStyle = `padding:9px 14px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);border-bottom:1px solid var(--border);white-space:nowrap`;
+  const tdBase  = `padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border2);white-space:nowrap`;
+
+  const headerHTML = cols.map(c => `<th style="${thStyle};text-align:${c.align}">${c.label}</th>`).join('');
+
+  const rowHTML = (r, isTot) => {
+    const bg = isTot ? 'background:var(--bg3)' : '';
+    const fw = isTot ? 'font-weight:700' : '';
+    return `<tr style="${bg}">` + cols.map(c => {
+      const val = r[c.key];
+      const disp = c.fmt ? c.fmt(val) : val;
+      const color = (c.key === 'sendRate' && val === 0) ? 'var(--hot)' : c.color;
+      return `<td style="${tdBase};text-align:${c.align};color:${color};${fw}">${disp}</td>`;
+    }).join('') + '</tr>';
+  };
+
+  document.getElementById('aesummary-content').innerHTML = `
+    <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2)">AE PERFORMANCE SUMMARY — SHOPTALK EUROPE 2026</div>
+      <div style="font-size:10px;color:var(--muted);font-style:italic">Live · updates every 30s</div>
+    </div>
+    <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border)">
+      <table style="width:100%;border-collapse:collapse;min-width:900px">
+        <thead><tr>${headerHTML}</tr></thead>
+        <tbody>
+          ${rows.map(r => rowHTML(r, false)).join('')}
+          ${rowHTML(totRow, true)}
+        </tbody>
+      </table>
+    </div>`;
 }
 
 let pipFilter = 'all';
