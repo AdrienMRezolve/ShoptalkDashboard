@@ -776,7 +776,8 @@ function rowToEntry(r) {
            ts: new Date(r.logged_at).getTime(),
            contactName:r.contact_name||'', contactRole:r.contact_role||'',
            contactEmail:r.contact_email||'', followedUp:r.followed_up||false,
-           sentAt:r.sent_at||null };
+           sentAt:r.sent_at||null,
+           ccName:r.cc_name||'', ccEmail:r.cc_email||'' };
 }
 function entryToRow(name, e) {
   const team = BOOTH.includes(name)?'Booth':SDR.includes(name)?'SDR':'Meetings';
@@ -1989,6 +1990,9 @@ function fuCardHTML(entry, memberName, idx) {
   const emailLine = entry.contactEmail
     ? `<div style="font-size:9px;margin-top:2px"><a href="mailto:${entry.contactEmail}" style="color:var(--accent);text-decoration:none;opacity:.8" onclick="event.stopPropagation()">${entry.contactEmail}</a></div>`
     : '';
+  const ccLine = entry.ccEmail
+    ? `<div style="font-size:9px;margin-top:3px;display:flex;align-items:center;gap:4px"><span style="color:var(--muted);font-size:8px;letter-spacing:1px">CC</span><a href="mailto:${entry.ccEmail}" style="color:var(--muted2);text-decoration:none;opacity:.8" onclick="event.stopPropagation()">${entry.ccName?entry.ccName+' &lt;'+entry.ccEmail+'&gt;':entry.ccEmail}</a></div>`
+    : '';
   const esc = s => (s||'').replace(/"/g,'&quot;');
   return `<div>
     <div class="fu-card ${lt}${entry.followedUp?' done':''}" onclick="openFuDetail('${entry.id}')" style="cursor:pointer">
@@ -1997,6 +2001,7 @@ function fuCardHTML(entry, memberName, idx) {
           <div class="fu-card-co">${entry.company}</div>
           <div class="fu-card-contact">${contactLine}</div>
           ${emailLine}
+          ${ccLine}
           ${entry.note?`<div class="fu-card-note">${entry.note.length>90?entry.note.slice(0,90)+'…':entry.note}</div>`:''}
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
             <span class="badge badge-${lt}">${ltEmoji[lt]} ${lt.toUpperCase()}</span>
@@ -2019,10 +2024,14 @@ function fuCardHTML(entry, memberName, idx) {
       </div>
     </div>
     <div id="fuc${idx}" style="display:none;background:var(--bg4);border:1px solid var(--accent)33;border-top:none;padding:14px 15px;margin-bottom:8px">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px">
         <div class="field" style="margin-bottom:0"><label>Contact Name</label><input type="text" id="fucc-nm${idx}" placeholder="First Last" value="${esc(entry.contactName)}"></div>
         <div class="field" style="margin-bottom:0"><label>Role</label><input type="text" id="fucc-ro${idx}" placeholder="Head of Digital" value="${esc(entry.contactRole)}"></div>
         <div class="field" style="margin-bottom:0"><label>Email</label><input type="text" id="fucc-em${idx}" placeholder="name@company.com" value="${esc(entry.contactEmail)}"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;border-top:1px solid var(--border);padding-top:8px">
+        <div class="field" style="margin-bottom:0"><label style="color:var(--muted2)">CC Name</label><input type="text" id="fucc-ccnm${idx}" placeholder="Teammate name" value="${esc(entry.ccName)}"></div>
+        <div class="field" style="margin-bottom:0"><label style="color:var(--muted2)">CC Email</label><input type="text" id="fucc-ccem${idx}" placeholder="teammate@rezolve.com" value="${esc(entry.ccEmail)}"></div>
       </div>
       <div style="display:flex;gap:7px;align-items:center">
         <button class="btn-primary" style="margin-top:0;max-width:120px;font-size:9px;letter-spacing:1px" onclick="fuSaveContact(${idx},'${entry.id}','${memberName}')">✓ Save</button>
@@ -2088,16 +2097,19 @@ function toggleFuContact(idx) {
 }
 
 async function fuSaveContact(idx, entryId, memberName) {
-  const name  = document.getElementById('fucc-nm'+idx)?.value.trim()||'';
-  const role  = document.getElementById('fucc-ro'+idx)?.value.trim()||'';
-  const email = document.getElementById('fucc-em'+idx)?.value.trim()||'';
-  const stEl  = document.getElementById('fucc-st'+idx);
+  const name   = document.getElementById('fucc-nm'+idx)?.value.trim()||'';
+  const role   = document.getElementById('fucc-ro'+idx)?.value.trim()||'';
+  const email  = document.getElementById('fucc-em'+idx)?.value.trim()||'';
+  const ccName = document.getElementById('fucc-ccnm'+idx)?.value.trim()||'';
+  const ccEmail= document.getElementById('fucc-ccem'+idx)?.value.trim()||'';
+  const stEl   = document.getElementById('fucc-st'+idx);
   stEl.className='status status-load'; stEl.textContent='Saving…'; stEl.style.display='block';
   const e = data[memberName]?.entries.find(x=>x.id===entryId);
   if (!e) { stEl.className='status status-err'; stEl.textContent='Not found.'; return; }
   e.contactName=name; e.contactRole=role; e.contactEmail=email;
+  e.ccName=ccName; e.ccEmail=ccEmail;
   saveToStorage();
-  await sbPatch(entryId, {contact_name:name, contact_role:role, contact_email:email});
+  await sbPatch(entryId, {contact_name:name, contact_role:role, contact_email:email, cc_name:ccName, cc_email:ccEmail});
   stEl.className='status status-ok'; stEl.textContent='✓ Saved!';
   setTimeout(()=>{ renderFollowup(); showFlash('✓ Contact saved for '+e.company); }, 400);
 }
@@ -2134,7 +2146,7 @@ function openFuEmail(entryId) {
   if (e.note) { np.style.display='block'; document.getElementById('fu-notes-text').textContent=e.note; }
   else np.style.display='none';
   document.getElementById('fu-e-to').value = e.contactEmail || '';
-  document.getElementById('fu-e-cc').value = '';
+  document.getElementById('fu-e-cc').value = e.ccEmail ? (e.ccName ? `${e.ccName} <${e.ccEmail}>` : e.ccEmail) : '';
   fuSetEmailTab({hot:'active',warm:'warm',nurture:'cold'}[e.leadType]||'warm');
   document.getElementById('fu-copy-btn').textContent='Copy Email';
   document.getElementById('fu-copy-btn').style.background='var(--accent)';
