@@ -338,8 +338,8 @@
         <div class="card-title" style="color:var(--accent)">SDR Team · $750k × 3</div>
         <div class="grid2" style="gap:14px;align-items:flex-end;margin-bottom:12px">
           <div>
-            <div class="big" style="font-size:34px" id="sdr-scored">$0</div>
-            <div style="font-size:9px;color:var(--muted)">own scored pipeline</div>
+            <div class="big" style="font-size:34px;color:var(--accent)" id="sdr-attributed-big">$0</div>
+            <div style="font-size:9px;color:var(--muted)">attributed pipeline</div>
           </div>
           <div style="display:flex;gap:24px;text-align:right">
             <div>
@@ -1288,30 +1288,21 @@ function renderAll() {
   }));
   const totalSdrAttr = SDR.reduce((s,n)=>s+sdrAttr[n].scored,0);
   const totalSdrSourced = SDR.reduce((s,n)=>s+sdrAttr[n].eng,0);
-  document.getElementById('sdr-scored').textContent = fmt(sdrS);
-  document.getElementById('sdr-scored').style.color = sdrS >= SDR_TARGET ? 'var(--green)' : '#fff';
-  document.getElementById('sdr-bar').style.width = pct(sdrS,SDR_TARGET)+'%';
-  document.getElementById('sdr-bar').style.background = sdrS >= SDR_TARGET ? 'var(--green)' : 'var(--accent)';
-  document.getElementById('sdr-pct').textContent = pct(sdrS,SDR_TARGET)+'%';
-  document.getElementById('sdr-rem').textContent = fmt(Math.max(0,SDR_TARGET-sdrS))+' to go';
+  document.getElementById('sdr-attributed-big').textContent = fmt(totalSdrAttr);
+  document.getElementById('sdr-bar').style.width = pct(totalSdrAttr,SDR_TARGET)+'%';
+  document.getElementById('sdr-bar').style.background = totalSdrAttr >= SDR_TARGET ? 'var(--green)' : 'var(--accent)';
+  document.getElementById('sdr-pct').textContent = pct(totalSdrAttr,SDR_TARGET)+'%';
+  document.getElementById('sdr-rem').textContent = fmt(Math.max(0,SDR_TARGET-totalSdrAttr))+' to go';
   document.getElementById('sdr-attributed').textContent = fmt(totalSdrAttr);
   document.getElementById('sdr-sourced-count').textContent = totalSdrSourced;
   const attrMax = Math.max(1, ...SDR.map(n => sdrAttr[n].scored));
   document.getElementById('sdr-members').innerHTML = SDR.map(n => `
-    <div class="mbar" style="margin-bottom:10px;align-items:flex-start">
-      <span class="mbar-name" style="width:80px;padding-top:3px">${n}</span>
-      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;align-items:center;gap:7px">
-          <span style="font-size:8px;letter-spacing:1px;color:var(--muted2);width:52px;text-transform:uppercase">own</span>
-          <div class="bar-track" style="flex:1;height:5px"><div class="bar-fill" style="width:${pct(data[n].scored,sdrMax)}%;background:var(--accent)"></div></div>
-          <span style="font-size:9px;color:var(--muted);width:40px;text-align:right">${fmt(data[n].scored)}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:7px">
-          <span style="font-size:8px;letter-spacing:1px;color:var(--accent);width:52px;text-transform:uppercase">attributed</span>
-          <div class="bar-track" style="flex:1;height:5px"><div class="bar-fill" style="width:${pct(sdrAttr[n].scored,attrMax)}%;background:#5a8ac3"></div></div>
-          <span style="font-size:9px;color:var(--accent);width:40px;text-align:right">${sdrAttr[n].eng ? fmt(sdrAttr[n].scored)+' <span style="color:var(--muted);font-size:8px">('+sdrAttr[n].eng+')</span>' : '—'}</span>
-        </div>
-      </div>
+    <div class="mbar" style="margin-bottom:8px;align-items:center">
+      <span class="mbar-name" style="width:80px">${n}</span>
+      <div class="bar-track" style="flex:1;height:6px"><div class="bar-fill" style="width:${pct(sdrAttr[n].scored,attrMax)}%;background:#5a8ac3"></div></div>
+      <span style="font-size:9px;color:var(--accent);width:100px;text-align:right">
+        ${sdrAttr[n].eng ? fmt(sdrAttr[n].scored)+' <span style="color:var(--muted);font-size:8px">('+sdrAttr[n].eng+' mtg)</span>' : '—'}
+      </span>
     </div>`).join('');
 
   // Total
