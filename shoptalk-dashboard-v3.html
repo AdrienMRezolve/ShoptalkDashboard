@@ -670,6 +670,10 @@
       <button class="fu-etab block-pill" onclick="fuSetEmailTab('warm')">Warm Prospect</button>
       <button class="fu-etab block-pill" onclick="fuSetEmailTab('cold')">Early Stage</button>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="field" style="margin-bottom:0"><label>To</label><input type="text" id="fu-e-to" placeholder="contact@company.com"></div>
+      <div class="field" style="margin-bottom:0"><label>CC</label><input type="text" id="fu-e-cc" placeholder="optional — teammate, SDR…"></div>
+    </div>
     <div class="field" style="margin-bottom:4px"><label>Subject</label><input type="text" id="fu-e-subject"></div>
     <div style="font-size:9px;color:var(--muted);margin-bottom:12px;padding-left:2px">↳ <code style="color:var(--muted2)">[ref:…]</code> tag at end of subject is read by Power Automate to auto-sync status when you send</div>
     <div class="field" style="margin-bottom:0"><label>Body — edit before sending</label>
@@ -1964,6 +1968,9 @@ function fuCardHTML(entry, memberName, idx) {
   const contactLine = entry.contactName
     ? `${entry.contactName}${entry.contactRole?` · <span style="color:var(--muted2)">${entry.contactRole}</span>`:''}`
     : `<span style="color:var(--border2);font-style:italic">no contact logged</span>`;
+  const emailLine = entry.contactEmail
+    ? `<div style="font-size:9px;margin-top:2px"><a href="mailto:${entry.contactEmail}" style="color:var(--accent);text-decoration:none;opacity:.8" onclick="event.stopPropagation()">${entry.contactEmail}</a></div>`
+    : '';
   const esc = s => (s||'').replace(/"/g,'&quot;');
   return `<div>
     <div class="fu-card ${lt}${entry.followedUp?' done':''}">
@@ -1971,6 +1978,7 @@ function fuCardHTML(entry, memberName, idx) {
         <div style="flex:1;min-width:0">
           <div class="fu-card-co">${entry.company}</div>
           <div class="fu-card-contact">${contactLine}</div>
+          ${emailLine}
           ${entry.note?`<div class="fu-card-note">${entry.note.length>90?entry.note.slice(0,90)+'…':entry.note}</div>`:''}
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
             <span class="badge badge-${lt}">${ltEmoji[lt]} ${lt.toUpperCase()}</span>
@@ -2061,6 +2069,8 @@ function openFuEmail(entryId) {
   const np=document.getElementById('fu-notes-preview');
   if (e.note) { np.style.display='block'; document.getElementById('fu-notes-text').textContent=e.note; }
   else np.style.display='none';
+  document.getElementById('fu-e-to').value = e.contactEmail || '';
+  document.getElementById('fu-e-cc').value = '';
   fuSetEmailTab({hot:'active',warm:'warm',nurture:'cold'}[e.leadType]||'warm');
   document.getElementById('fu-copy-btn').textContent='Copy Email';
   document.getElementById('fu-copy-btn').style.background='var(--accent)';
@@ -2081,7 +2091,14 @@ function fuSetEmailTab(tab) {
 }
 
 function fuCopyEmail() {
-  navigator.clipboard.writeText(`Subject: ${document.getElementById('fu-e-subject').value}\n\n${document.getElementById('fu-e-body').value}`).then(()=>{
+  const to = document.getElementById('fu-e-to').value.trim();
+  const cc = document.getElementById('fu-e-cc').value.trim();
+  const parts = [];
+  if (to) parts.push(`To: ${to}`);
+  if (cc) parts.push(`CC: ${cc}`);
+  parts.push(`Subject: ${document.getElementById('fu-e-subject').value}`);
+  parts.push('', document.getElementById('fu-e-body').value);
+  navigator.clipboard.writeText(parts.join('\n')).then(()=>{
     const btn=document.getElementById('fu-copy-btn');
     btn.textContent='✓ Copied!'; btn.style.background='var(--green)';
     setTimeout(()=>{ btn.textContent='Copy Email'; btn.style.background='var(--accent)'; },2200);
