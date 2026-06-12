@@ -190,6 +190,21 @@
   .pip-val { text-align: right; }
   .pip-val .scored { font-family: 'Bebas Neue'; font-size: 20px; line-height: 1; }
   .pip-val .raw    { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+  /* FOLLOW-UP TAB */
+  .fu-card { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--border2); padding: 13px 14px; margin-bottom: 8px; transition: border-color .12s; }
+  .fu-card:hover { border-color: var(--border2); }
+  .fu-card.hot    { border-left-color: var(--hot); }
+  .fu-card.warm   { border-left-color: var(--warm); }
+  .fu-card.nurture{ border-left-color: var(--nurture); }
+  .fu-card.done   { opacity: .42; }
+  .fu-card-co { font-size: 13px; font-weight: 500; }
+  .fu-card-contact{ font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .fu-card-note   { font-size: 9px; color: var(--muted2); margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1px solid var(--border); padding-top: 5px; }
+  .fu-mark-sent   { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px; padding: 4px 9px; cursor: pointer; transition: all .15s; }
+  .fu-mark-sent:hover { border-color: var(--green); color: var(--green); }
+  .fu-mark-sent.sent  { border-color: var(--green); color: var(--green); background: #00e67611; }
+  .fu-etab.active { border-color: var(--accent) !important; color: var(--accent) !important; background: #00e5ff11 !important; }
 </style>
 </head>
 <body>
@@ -269,6 +284,7 @@
   <button class="tab active" onclick="showTab('dashboard')">📊 Overview</button>
   <button class="tab" onclick="showTab('log')">➕ Log Entry</button>
   <button class="tab" onclick="showTab('pipeline')">💼 Pipeline</button>
+  <button class="tab" onclick="showTab('followup')">📧 Follow-up</button>
   <button class="tab" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
   <button class="tab" onclick="showTab('blocks')">📅 By Block</button>
 </div>
@@ -545,6 +561,30 @@
     <div id="pip-list"></div>
   </div>
 
+  <!-- FOLLOW-UP -->
+  <div id="panel-followup" class="panel">
+    <div id="fu-stats" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div id="fu-filters"></div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button class="btn-sm" id="fu-vt-board" onclick="setFuView('board')" style="padding:5px 11px">⊞ Board</button>
+        <button class="btn-sm" id="fu-vt-ae" onclick="setFuView('ae')" style="padding:5px 11px">👤 By AE</button>
+      </div>
+    </div>
+    <div style="margin-bottom:10px" id="fu-ae-filters"></div>
+    <div style="margin-bottom:16px;position:relative">
+      <input id="fu-search" type="text" placeholder="🔍  Search company…" oninput="setFuSearch(this.value)"
+        style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:9px 36px 9px 14px;border-radius:6px;outline:none">
+      <button id="fu-search-clear" onclick="clearFuSearch()" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div id="fu-board" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div><div id="fu-col-hot"></div></div>
+      <div><div id="fu-col-warm"></div></div>
+      <div><div id="fu-col-nurture"></div></div>
+    </div>
+    <div id="fu-ae-view" style="display:none"></div>
+  </div>
+
 </div>
 
 <!-- EDIT OPPORTUNITY MODAL -->
@@ -615,6 +655,61 @@
   </div>
 </div>
 
+<!-- FOLLOW-UP EMAIL MODAL -->
+<div id="fu-detail-modal" style="display:none;position:fixed;inset:0;background:#0a1828cc;z-index:590;align-items:center;justify-content:center;backdrop-filter:blur(2px)" onclick="if(event.target===this)closeFuDetail()">
+  <div class="modal-box" style="max-width:520px;max-height:88vh;overflow-y:auto">
+    <button style="position:absolute;top:15px;right:17px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1" onclick="closeFuDetail()">✕</button>
+    <div id="fu-detail-co" class="modal-title" style="padding-right:30px;word-break:break-word"></div>
+    <div id="fu-detail-meta" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <div id="fu-detail-contact-block" style="background:var(--bg4);border:1px solid var(--border);padding:10px 14px;margin-bottom:14px;display:none">
+      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:6px">CONTACT</div>
+      <div id="fu-detail-contact-name" style="font-size:13px;color:var(--text)"></div>
+      <div id="fu-detail-contact-role" style="font-size:10px;color:var(--muted);margin-top:2px"></div>
+      <div id="fu-detail-contact-email" style="margin-top:4px"></div>
+    </div>
+    <div id="fu-detail-note-block" style="display:none">
+      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:6px">NOTES</div>
+      <div id="fu-detail-note" style="font-size:12px;color:var(--text);line-height:1.7;white-space:pre-wrap;background:var(--bg4);border:1px solid var(--border);padding:10px 14px;border-radius:2px"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button onclick="if(_fuDetailEntry)openFuEmail(_fuDetailEntry.id);closeFuDetail()" style="background:var(--accent);color:#0f2333;border:none;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:8px 14px;cursor:pointer">✉ Open Follow-up</button>
+      <button class="btn-ghost" onclick="closeFuDetail()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="fu-email-modal" style="display:none;position:fixed;inset:0;background:#0a1828cc;z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)" onclick="if(event.target===this)closeFuEmail()">
+  <div class="modal-box" style="max-width:600px;max-height:92vh">
+    <button style="position:absolute;top:15px;right:17px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1" onclick="closeFuEmail()">✕</button>
+    <div class="modal-title">✉ Follow-up Email</div>
+    <div id="fu-email-header" style="display:flex;gap:16px;flex-wrap:wrap;background:var(--bg4);padding:10px 14px;margin-bottom:14px"></div>
+    <div id="fu-notes-preview" style="display:none;background:var(--bg4);border:1px solid var(--border);padding:8px 12px;margin-bottom:12px">
+      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">MEETING NOTES</div>
+      <div id="fu-notes-text" style="font-size:11px;color:var(--muted);line-height:1.5;max-height:80px;overflow-y:auto"></div>
+    </div>
+    <div style="display:flex;gap:5px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:10px">
+      <button class="fu-etab block-pill active" onclick="fuSetEmailTab('active')">Active Deal</button>
+      <button class="fu-etab block-pill" onclick="fuSetEmailTab('warm')">Warm Prospect</button>
+      <button class="fu-etab block-pill" onclick="fuSetEmailTab('cold')">Early Stage</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="field" style="margin-bottom:0"><label>To</label><input type="text" id="fu-e-to" placeholder="contact@company.com"></div>
+      <div class="field" style="margin-bottom:0"><label>CC</label><input type="text" id="fu-e-cc" placeholder="optional — teammate, SDR…"></div>
+    </div>
+    <div class="field" style="margin-bottom:4px"><label>Subject</label><input type="text" id="fu-e-subject"></div>
+    <div style="font-size:9px;color:var(--muted);margin-bottom:12px;padding-left:2px">↳ <code style="color:var(--muted2)">[ref:…]</code> tag at end of subject is read by Power Automate to auto-sync status when you send</div>
+    <div class="field" style="margin-bottom:0"><label>Body — edit before sending</label>
+      <textarea id="fu-e-body" style="min-height:190px;resize:vertical;line-height:1.6;background:var(--bg4);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:9px 12px;width:100%;outline:none"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap">
+      <button onclick="fuMarkSentFromEmail()" style="background:#00e67618;border:1px solid #00e67644;color:var(--green);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:8px 14px;cursor:pointer">✓ Mark Sent</button>
+      <button class="btn-ghost" onclick="closeFuEmail()">Close</button>
+      <button id="fu-copy-btn" onclick="fuCopyEmail()" style="margin-left:auto;background:var(--accent);color:#0f2333;border:none;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;padding:8px 16px;cursor:pointer;font-weight:500">Copy Email</button>
+    </div>
+    <div class="status" id="fu-email-status"></div>
+  </div>
+</div>
+
 <script>
 const BOOTH    = ["Luca","Adrien","Lee","Leonard","Javed"];
 const SDR      = ["Zoran","Miriyam","Christina"];
@@ -678,7 +773,10 @@ function rowToEntry(r) {
   return { id:r.id, block:r.block, raw:r.raw, scored:r.scored,
            leadType:r.lead_type, size:r.size_label,
            company:r.company||'', sdrSource:r.sdr_source||'', note:r.note||'',
-           ts: new Date(r.logged_at).getTime() };
+           ts: new Date(r.logged_at).getTime(),
+           contactName:r.contact_name||'', contactRole:r.contact_role||'',
+           contactEmail:r.contact_email||'', followedUp:r.followed_up||false,
+           sentAt:r.sent_at||null };
 }
 function entryToRow(name, e) {
   const team = BOOTH.includes(name)?'Booth':SDR.includes(name)?'SDR':'Meetings';
@@ -716,6 +814,7 @@ async function syncFromSupabase() {
     data = fresh;
     saveToStorage();
     renderAll();
+    if (document.getElementById('panel-followup').classList.contains('active')) renderFollowup();
     setSyncStatus('ok');
     await flushPending();
   } catch { setSyncStatus('offline'); }
@@ -876,10 +975,11 @@ async function resetAll() {
 }
 
 function showTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','pipeline','leaderboard','blocks'][i]===name));
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','pipeline','followup','leaderboard','blocks'][i]===name));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
   if (name === 'pipeline') renderPipeline();
+  if (name === 'followup') renderFollowup();
 }
 
 let pipFilter = 'all';
@@ -1196,17 +1296,22 @@ function renderAll() {
   document.getElementById('sdr-rem').textContent = fmt(Math.max(0,SDR_TARGET-sdrS))+' to go';
   document.getElementById('sdr-attributed').textContent = fmt(totalSdrAttr);
   document.getElementById('sdr-sourced-count').textContent = totalSdrSourced;
+  const attrMax = Math.max(1, ...SDR.map(n => sdrAttr[n].scored));
   document.getElementById('sdr-members').innerHTML = SDR.map(n => `
-    <div class="mbar" style="margin-bottom:10px">
-      <span class="mbar-name" style="width:80px">${n}</span>
-      <div style="flex:1">
-        <div class="bar-track" style="height:5px;margin-bottom:3px"><div class="bar-fill" style="width:${pct(data[n].scored,sdrMax)}%;background:var(--accent)"></div></div>
-        <div style="display:flex;gap:10px;font-size:9px;color:var(--muted)">
-          <span>own: ${fmt(data[n].scored)}</span>
-          ${sdrAttr[n].eng ? '<span style="color:var(--accent)">attributed: '+fmt(sdrAttr[n].scored)+' ('+sdrAttr[n].eng+' mtg)</span>' : ''}
+    <div class="mbar" style="margin-bottom:10px;align-items:flex-start">
+      <span class="mbar-name" style="width:80px;padding-top:3px">${n}</span>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-size:8px;letter-spacing:1px;color:var(--muted2);width:52px;text-transform:uppercase">own</span>
+          <div class="bar-track" style="flex:1;height:5px"><div class="bar-fill" style="width:${pct(data[n].scored,sdrMax)}%;background:var(--accent)"></div></div>
+          <span style="font-size:9px;color:var(--muted);width:40px;text-align:right">${fmt(data[n].scored)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-size:8px;letter-spacing:1px;color:var(--accent);width:52px;text-transform:uppercase">attributed</span>
+          <div class="bar-track" style="flex:1;height:5px"><div class="bar-fill" style="width:${pct(sdrAttr[n].scored,attrMax)}%;background:#5a8ac3"></div></div>
+          <span style="font-size:9px;color:var(--accent);width:40px;text-align:right">${sdrAttr[n].eng ? fmt(sdrAttr[n].scored)+' <span style="color:var(--muted);font-size:8px">('+sdrAttr[n].eng+')</span>' : '—'}</span>
         </div>
       </div>
-      <span class="mbar-val">${fmt(data[n].scored)}</span>
     </div>`).join('');
 
   // Total
@@ -1722,6 +1827,382 @@ function exportXlsx() {
   ];
   download(zipStore(files), 'shoptalk-pipeline-' + stamp() + '.xlsx');
   showFlash('⬇ Excel workbook downloaded');
+}
+
+// ── Follow-up Tab ────────────────────────────────────────────────────────────
+let fuFilter = 'all'; // all | hot | warm | nurture | sent
+let fuView   = 'board';
+let fuSearch = '';
+let fuOwner  = '';
+let _fuList  = []; // [{entry, member}] ordered for index-based DOM
+
+const FU_BLBL = {day1:'Day 1',rooftop:'Rooftop',day2:'Day 2',day3breakfast:'Day 3 AM',day3:'Day 3'};
+
+const FU_TMPL = {
+  active: {
+    sub:  (c,e)    => `Following up from Shoptalk — ${c}`,
+    body: (c,e,ae) => `Hi ${e.contactName ? e.contactName.split(' ')[0] : 'there'},\n\nGreat to connect with you in Barcelona. As we discussed, I'm looping in the right people on our side to move things forward.\n\nTo confirm what we agreed:\n• [Action 1 — owner + date]\n• [Action 2 — owner + date]\n• Next meeting: [date / format / attendees]\n\nI'll send a calendar invite shortly — let me know if anything changes.\n\nTalk soon,\n${ae}\nRezolve Ai | rezolve.com`
+  },
+  warm: {
+    sub:  (c,e)    => `Great connecting at Shoptalk — next steps for ${c}`,
+    body: (c,e,ae) => `Hi ${e.contactName ? e.contactName.split(' ')[0] : 'there'},\n\nReally enjoyed our conversation at Shoptalk${e.note ? ' — ' + e.note.split('.')[0].toLowerCase() + '.' : '.'}\n\nAs promised:\n• [Link / deck / case study relevant to their use case]\n• [Specific follow-up committed to in the meeting]\n\nI'd love to set up a proper session to go deeper — does a 30-min call the week of [date] work?\n\nBest,\n${ae}\nRezolve Ai | rezolve.com`
+  },
+  cold: {
+    sub:  (c,e)    => `Good to meet you at Shoptalk — ${c}`,
+    body: (c,e,ae) => `Hi ${e.contactName ? e.contactName.split(' ')[0] : 'there'},\n\nGood to connect briefly at Shoptalk — hope the rest of the show was useful.\n\n${e.note ? '[' + e.note.split('.')[0] + ']' : '[One sentence on what you discussed.]'}\n\nI thought this might be relevant: [link to a short resource or case study].\n\nNo pressure — just wanted to stay on your radar heading into H2.\n\n${ae}\nRezolve Ai | rezolve.com`
+  }
+};
+
+let _fuEmailEntry  = null;
+let _fuEmailMember = null;
+let _fuEmailTab    = 'active';
+
+function fuGetAll() {
+  const list = [];
+  ALL.forEach(n => data[n].entries.forEach(e => { if (e.company) list.push({entry:e, member:n}); }));
+  list.sort((a,b) => b.entry.scored - a.entry.scored);
+  return list;
+}
+
+function fuApplyFilters(list) {
+  return list.filter(({entry, member}) => {
+    if (fuFilter === 'hot'    && entry.leadType !== 'hot')    return false;
+    if (fuFilter === 'warm'   && entry.leadType !== 'warm')   return false;
+    if (fuFilter === 'nurture'&& entry.leadType !== 'nurture')return false;
+    if (fuFilter === 'sent'   && !entry.followedUp)           return false;
+    if (fuOwner  && member !== fuOwner)                       return false;
+    if (fuSearch && !entry.company.toLowerCase().includes(fuSearch.toLowerCase())) return false;
+    return true;
+  });
+}
+
+function renderFollowup() {
+  const all      = fuGetAll();
+  const filtered = fuApplyFilters(all);
+  _fuList = filtered;
+
+  // Stats strip
+  const totalScored = all.reduce((s,x) => s+x.entry.scored, 0);
+  const totalRaw    = all.reduce((s,x) => s+x.entry.raw, 0);
+  const sentCnt     = all.filter(x => x.entry.followedUp).length;
+  document.getElementById('fu-stats').innerHTML = [
+    {label:'🔥 Pending Hot',    val: all.filter(x=>x.entry.leadType==='hot'   &&!x.entry.followedUp).length, color:'var(--hot)'},
+    {label:'🟡 Pending Warm',   val: all.filter(x=>x.entry.leadType==='warm'  &&!x.entry.followedUp).length, color:'var(--warm)'},
+    {label:'🌱 Pending Nurture',val: all.filter(x=>x.entry.leadType==='nurture'&&!x.entry.followedUp).length, color:'var(--nurture)'},
+    {label:'✓ Sent',            val: sentCnt+' / '+all.length,  color:'var(--green)'},
+    {label:'Scored Pipeline',   val: fmt(totalScored), color:'var(--gold)', sub:'raw '+fmt(totalRaw)},
+  ].map(k=>`<div class="card" style="padding:12px 14px;flex:1;min-width:110px">
+    <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">${k.label.toUpperCase()}</div>
+    <div class="big" style="font-size:22px;color:${k.color};line-height:1">${k.val}</div>
+    ${k.sub?`<div style="font-size:9px;color:var(--muted);margin-top:2px">${k.sub}</div>`:''}</div>`).join('');
+
+  // Filter pills
+  document.getElementById('fu-filters').innerHTML = [
+    {id:'all',    label:'All · '+all.length},
+    {id:'hot',    label:'🔥 Hot · '+all.filter(x=>x.entry.leadType==='hot').length},
+    {id:'warm',   label:'🟡 Warm · '+all.filter(x=>x.entry.leadType==='warm').length},
+    {id:'nurture',label:'🌱 Nurture · '+all.filter(x=>x.entry.leadType==='nurture').length},
+    {id:'sent',   label:'✓ Sent · '+sentCnt},
+  ].map(f=>`<button class="block-pill${fuFilter===f.id?' active':''}" onclick="setFuFilter('${f.id}')">${f.label}</button>`).join('');
+
+  // AE pills
+  const base = fuFilter==='sent'    ? all.filter(x=>x.entry.followedUp)
+             : fuFilter==='hot'     ? all.filter(x=>x.entry.leadType==='hot')
+             : fuFilter==='warm'    ? all.filter(x=>x.entry.leadType==='warm')
+             : fuFilter==='nurture' ? all.filter(x=>x.entry.leadType==='nurture') : all;
+  document.getElementById('fu-ae-filters').innerHTML =
+    `<span style="font-size:9px;letter-spacing:2px;color:var(--muted);margin-right:8px;vertical-align:middle">AE</span>` +
+    [...BOOTH,...MEETINGS].map(ae => {
+      const cnt = base.filter(x=>x.member===ae).length;
+      if (!cnt) return '';
+      return `<button class="block-pill${fuOwner===ae?' active':''}" onclick="setFuOwner('${ae}')" style="margin-bottom:4px">${ae} · ${cnt}</button>`;
+    }).join('');
+
+  // Sync search input
+  const si = document.getElementById('fu-search'), sc = document.getElementById('fu-search-clear');
+  if (si && si !== document.activeElement) si.value = fuSearch;
+  if (sc) sc.style.display = fuSearch ? 'block' : 'none';
+
+  // View toggle
+  document.getElementById('fu-vt-board').classList.toggle('active', fuView==='board');
+  document.getElementById('fu-vt-ae').classList.toggle('active',    fuView==='ae');
+
+  if (fuView === 'board') renderFuBoard(filtered);
+  else                    renderFuAE(filtered);
+}
+
+function renderFuBoard(filtered) {
+  document.getElementById('fu-board').style.display   = 'grid';
+  document.getElementById('fu-ae-view').style.display = 'none';
+  const ltColors = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji  = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  ['hot','warm','nurture'].forEach(lt => {
+    const col = filtered.filter(x => x.entry.leadType === lt);
+    document.getElementById('fu-col-'+lt).innerHTML =
+      `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:${ltColors[lt]}">${ltEmoji[lt]} ${lt.toUpperCase()} · ${col.length}</div>
+        <div class="big" style="font-size:14px;color:var(--gold)">${col.length ? fmt(col.reduce((s,x)=>s+x.entry.scored,0)) : ''}</div>
+      </div>` +
+      (col.length ? col.map(x => fuCardHTML(x.entry, x.member, filtered.indexOf(x))).join('') : `<div class="empty">NO ${lt.toUpperCase()} LEADS</div>`);
+  });
+}
+
+function renderFuAE(filtered) {
+  document.getElementById('fu-board').style.display   = 'none';
+  document.getElementById('fu-ae-view').style.display = 'block';
+  const aeMap = {};
+  filtered.forEach(x => {
+    if (!aeMap[x.member]) aeMap[x.member] = {items:[], scored:0};
+    aeMap[x.member].items.push(x);
+    aeMap[x.member].scored += x.entry.scored;
+  });
+  if (!Object.keys(aeMap).length) {
+    document.getElementById('fu-ae-view').innerHTML = '<div class="empty">NO ENTRIES MATCH CURRENT FILTERS</div>';
+    return;
+  }
+  const teamColor = m => BOOTH.includes(m)?'var(--orange)':SDR.includes(m)?'var(--accent)':'var(--purple)';
+  const teamLabel = m => BOOTH.includes(m)?'BOOTH':SDR.includes(m)?'SDR':'MEETINGS';
+  document.getElementById('fu-ae-view').innerHTML = Object.entries(aeMap)
+    .sort((a,b)=>b[1].scored-a[1].scored)
+    .map(([ae,{items,scored}]) => {
+      const col = teamColor(ae);
+      const sentN = items.filter(x=>x.entry.followedUp).length;
+      const hotN  = items.filter(x=>x.entry.leadType==='hot').length;
+      return `<div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          <div style="width:34px;height:34px;border-radius:50%;background:${col}22;border:1px solid ${col}55;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:13px;color:${col};flex-shrink:0">${ae.slice(0,2).toUpperCase()}</div>
+          <div>
+            <div style="font-size:14px">${ae}</div>
+            <div style="font-size:9px;letter-spacing:2px;color:var(--muted)">${teamLabel(ae)} TEAM</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:20px;text-align:right">
+            <div><div class="big" style="font-size:16px;color:var(--gold)">${fmt(scored)}</div><div style="font-size:8px;letter-spacing:1px;color:var(--muted)">SCORED</div></div>
+            <div><div class="big" style="font-size:16px;color:var(--hot)">${hotN}</div><div style="font-size:8px;letter-spacing:1px;color:var(--muted)">HOT</div></div>
+            <div><div class="big" style="font-size:16px;color:var(--green)">${sentN}</div><div style="font-size:8px;letter-spacing:1px;color:var(--muted)">SENT</div></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px">
+          ${items.map(x => fuCardHTML(x.entry, x.member, filtered.indexOf(x))).join('')}
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function fuCardHTML(entry, memberName, idx) {
+  const lt = entry.leadType;
+  const ltColors = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji  = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  const contactLine = entry.contactName
+    ? `${entry.contactName}${entry.contactRole?` · <span style="color:var(--muted2)">${entry.contactRole}</span>`:''}`
+    : `<span style="color:var(--border2);font-style:italic">no contact logged</span>`;
+  const emailLine = entry.contactEmail
+    ? `<div style="font-size:9px;margin-top:2px"><a href="mailto:${entry.contactEmail}" style="color:var(--accent);text-decoration:none;opacity:.8" onclick="event.stopPropagation()">${entry.contactEmail}</a></div>`
+    : '';
+  const esc = s => (s||'').replace(/"/g,'&quot;');
+  return `<div>
+    <div class="fu-card ${lt}${entry.followedUp?' done':''}" onclick="openFuDetail('${entry.id}')" style="cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div class="fu-card-co">${entry.company}</div>
+          <div class="fu-card-contact">${contactLine}</div>
+          ${emailLine}
+          ${entry.note?`<div class="fu-card-note">${entry.note.length>90?entry.note.slice(0,90)+'…':entry.note}</div>`:''}
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+            <span class="badge badge-${lt}">${ltEmoji[lt]} ${lt.toUpperCase()}</span>
+            ${entry.block?`<span class="badge" style="background:var(--bg4);color:var(--muted);border:1px solid var(--border)">${FU_BLBL[entry.block]||entry.block}</span>`:''}
+            ${entry.size?`<span class="badge" style="background:var(--bg4);color:var(--gold);border:1px solid #ffd54f33">${entry.size}</span>`:''}
+            ${entry.sdrSource?`<span class="badge badge-sdr-src">SDR: ${entry.sdrSource}</span>`:''}
+            ${entry.followedUp?`<span class="badge" style="background:#00e67622;color:var(--green)">✓ SENT</span>`:''}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="big" style="font-size:18px;color:${ltColors[lt]}">${fmt(entry.scored)}</div>
+          <div style="font-size:9px;color:var(--muted)">raw ${fmt(entry.raw)}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px">${memberName}</div>
+        </div>
+      </div>
+      <div style="margin-top:9px;display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn-sm" onclick="toggleFuContact(${idx});event.stopPropagation()" style="font-size:9px">✎ Contact</button>
+        <button class="btn-sm" onclick="openFuEmail('${entry.id}');event.stopPropagation()" style="border-color:var(--accent)44;color:var(--accent)">✉ Follow-up</button>
+        <button class="fu-mark-sent ${entry.followedUp?'sent':''}" onclick="fuToggleSent('${entry.id}','${memberName}');event.stopPropagation()">${entry.followedUp?'✓ Sent':'Mark Sent'}</button>
+      </div>
+    </div>
+    <div id="fuc${idx}" style="display:none;background:var(--bg4);border:1px solid var(--accent)33;border-top:none;padding:14px 15px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="field" style="margin-bottom:0"><label>Contact Name</label><input type="text" id="fucc-nm${idx}" placeholder="First Last" value="${esc(entry.contactName)}"></div>
+        <div class="field" style="margin-bottom:0"><label>Role</label><input type="text" id="fucc-ro${idx}" placeholder="Head of Digital" value="${esc(entry.contactRole)}"></div>
+        <div class="field" style="margin-bottom:0"><label>Email</label><input type="text" id="fucc-em${idx}" placeholder="name@company.com" value="${esc(entry.contactEmail)}"></div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <button class="btn-primary" style="margin-top:0;max-width:120px;font-size:9px;letter-spacing:1px" onclick="fuSaveContact(${idx},'${entry.id}','${memberName}')">✓ Save</button>
+        <button class="btn-ghost" onclick="toggleFuContact(${idx})">Cancel</button>
+        <div class="status" id="fucc-st${idx}" style="display:none;flex:1;margin:0"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+let _fuDetailEntry = null;
+
+function openFuDetail(entryId) {
+  let found = _fuList.find(x => x.entry.id === entryId);
+  if (!found) { ALL.forEach(n => data[n].entries.forEach(e => { if (e.id === entryId) found = {entry:e, member:n}; })); }
+  if (!found) return;
+  _fuDetailEntry = found.entry;
+  const e = found.entry;
+  const ltColors = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji  = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  const lt = e.leadType;
+
+  document.getElementById('fu-detail-co').textContent = e.company;
+  document.getElementById('fu-detail-meta').innerHTML = [
+    `<span class="badge badge-${lt}">${ltEmoji[lt]} ${lt.toUpperCase()}</span>`,
+    e.size  ? `<span class="badge" style="background:var(--bg4);color:var(--gold);border:1px solid #ffd54f33">${e.size}</span>` : '',
+    e.block ? `<span class="badge" style="background:var(--bg4);color:var(--muted);border:1px solid var(--border)">${FU_BLBL[e.block]||e.block}</span>` : '',
+    e.sdrSource ? `<span class="badge badge-sdr-src">SDR: ${e.sdrSource}</span>` : '',
+    `<span class="badge" style="background:var(--bg4);color:var(--gold);border:1px solid #ffd54f33">${fmt(e.scored)}</span>`,
+    `<span style="font-size:9px;color:var(--muted);padding:2px 6px">${found.member}</span>`,
+    e.followedUp ? `<span class="badge" style="background:#00e67622;color:var(--green)">✓ SENT</span>` : '',
+  ].join('');
+
+  const hasContact = e.contactName || e.contactEmail;
+  const cb = document.getElementById('fu-detail-contact-block');
+  cb.style.display = hasContact ? 'block' : 'none';
+  if (hasContact) {
+    document.getElementById('fu-detail-contact-name').textContent  = e.contactName  || '—';
+    document.getElementById('fu-detail-contact-role').textContent  = e.contactRole  || '';
+    document.getElementById('fu-detail-contact-email').innerHTML   = e.contactEmail
+      ? `<a href="mailto:${e.contactEmail}" style="color:var(--accent);font-size:11px;text-decoration:none">${e.contactEmail}</a>`
+      : '';
+  }
+
+  const nb = document.getElementById('fu-detail-note-block');
+  nb.style.display = e.note ? 'block' : 'none';
+  if (e.note) document.getElementById('fu-detail-note').textContent = e.note;
+
+  document.getElementById('fu-detail-modal').style.display = 'flex';
+}
+
+function closeFuDetail() {
+  document.getElementById('fu-detail-modal').style.display = 'none';
+  _fuDetailEntry = null;
+}
+
+function toggleFuContact(idx) {
+  const panel = document.getElementById('fuc'+idx);
+  if (!panel) return;
+  const opening = panel.style.display === 'none';
+  document.querySelectorAll('[id^="fuc"]').forEach(el => el.style.display='none');
+  if (opening) { panel.style.display='block'; panel.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+
+async function fuSaveContact(idx, entryId, memberName) {
+  const name  = document.getElementById('fucc-nm'+idx)?.value.trim()||'';
+  const role  = document.getElementById('fucc-ro'+idx)?.value.trim()||'';
+  const email = document.getElementById('fucc-em'+idx)?.value.trim()||'';
+  const stEl  = document.getElementById('fucc-st'+idx);
+  stEl.className='status status-load'; stEl.textContent='Saving…'; stEl.style.display='block';
+  const e = data[memberName]?.entries.find(x=>x.id===entryId);
+  if (!e) { stEl.className='status status-err'; stEl.textContent='Not found.'; return; }
+  e.contactName=name; e.contactRole=role; e.contactEmail=email;
+  saveToStorage();
+  await sbPatch(entryId, {contact_name:name, contact_role:role, contact_email:email});
+  stEl.className='status status-ok'; stEl.textContent='✓ Saved!';
+  setTimeout(()=>{ renderFollowup(); showFlash('✓ Contact saved for '+e.company); }, 400);
+}
+
+async function fuToggleSent(entryId, memberName, forceSent) {
+  const e = data[memberName]?.entries.find(x=>x.id===entryId);
+  if (!e) return;
+  const newSent = forceSent !== undefined ? forceSent : !e.followedUp;
+  const now = new Date().toISOString();
+  e.followedUp = newSent; e.sentAt = newSent ? now : null;
+  saveToStorage();
+  await sbPatch(entryId, {followed_up:newSent, sent_at:newSent?now:null});
+  renderFollowup();
+  showFlash(newSent ? '✓ '+e.company+' marked as sent' : '↩ '+e.company+' unmarked');
+}
+
+function openFuEmail(entryId) {
+  let found = _fuList.find(x=>x.entry.id===entryId);
+  if (!found) { ALL.forEach(n=>data[n].entries.forEach(e=>{ if(e.id===entryId) found={entry:e,member:n}; })); }
+  if (!found) return;
+  _fuEmailEntry=found.entry; _fuEmailMember=found.member;
+  const e=_fuEmailEntry;
+  const ltEmoji={hot:'🔥',warm:'🟡',nurture:'🌱'};
+  document.getElementById('fu-email-header').innerHTML = [
+    {l:'Company',v:e.company},
+    {l:'Contact', v:e.contactName||'—'},
+    e.contactRole?{l:'Role',v:e.contactRole}:null,
+    {l:'Status',  v:`<span class="badge badge-${e.leadType}">${ltEmoji[e.leadType]} ${e.leadType.toUpperCase()}</span>`},
+    {l:'Value',   v:`<span style="color:var(--gold)">${fmt(e.scored)}</span>`},
+    {l:'AE',      v:_fuEmailMember},
+    e.block?{l:'Block',v:FU_BLBL[e.block]||e.block}:null,
+  ].filter(Boolean).map(x=>`<div><div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:2px">${x.l.toUpperCase()}</div><div style="font-size:12px">${x.v}</div></div>`).join('');
+  const np=document.getElementById('fu-notes-preview');
+  if (e.note) { np.style.display='block'; document.getElementById('fu-notes-text').textContent=e.note; }
+  else np.style.display='none';
+  document.getElementById('fu-e-to').value = e.contactEmail || '';
+  document.getElementById('fu-e-cc').value = '';
+  fuSetEmailTab({hot:'active',warm:'warm',nurture:'cold'}[e.leadType]||'warm');
+  document.getElementById('fu-copy-btn').textContent='Copy Email';
+  document.getElementById('fu-copy-btn').style.background='var(--accent)';
+  document.getElementById('fu-email-status').style.display='none';
+  document.getElementById('fu-email-modal').style.display='flex';
+}
+
+function closeFuEmail() { document.getElementById('fu-email-modal').style.display='none'; _fuEmailEntry=null; _fuEmailMember=null; }
+
+function fuSetEmailTab(tab) {
+  _fuEmailTab=tab;
+  document.querySelectorAll('.fu-etab').forEach((b,i)=>b.classList.toggle('active',['active','warm','cold'][i]===tab));
+  if (_fuEmailEntry) {
+    const t=FU_TMPL[tab];
+    document.getElementById('fu-e-subject').value=t.sub(_fuEmailEntry.company,_fuEmailEntry)+` [ref:${_fuEmailEntry.id}]`;
+    document.getElementById('fu-e-body').value=t.body(_fuEmailEntry.company,_fuEmailEntry,_fuEmailMember);
+  }
+}
+
+function fuCopyEmail() {
+  const to = document.getElementById('fu-e-to').value.trim();
+  const cc = document.getElementById('fu-e-cc').value.trim();
+  const parts = [];
+  if (to) parts.push(`To: ${to}`);
+  if (cc) parts.push(`CC: ${cc}`);
+  parts.push(`Subject: ${document.getElementById('fu-e-subject').value}`);
+  parts.push('', document.getElementById('fu-e-body').value);
+  navigator.clipboard.writeText(parts.join('\n')).then(()=>{
+    const btn=document.getElementById('fu-copy-btn');
+    btn.textContent='✓ Copied!'; btn.style.background='var(--green)';
+    setTimeout(()=>{ btn.textContent='Copy Email'; btn.style.background='var(--accent)'; },2200);
+  });
+}
+
+async function fuMarkSentFromEmail() {
+  if (!_fuEmailEntry) return;
+  await fuToggleSent(_fuEmailEntry.id, _fuEmailMember, true);
+  const st=document.getElementById('fu-email-status');
+  st.className='status status-ok'; st.textContent='✓ Marked as sent!'; st.style.display='block';
+  setTimeout(()=>closeFuEmail(), 800);
+}
+
+function setFuFilter(f)  { fuFilter=f;  renderFollowup(); }
+function setFuView(v)    { fuView=v;    renderFollowup(); }
+function setFuOwner(ae)  { fuOwner=(fuOwner===ae)?'':ae; renderFollowup(); }
+function setFuSearch(v)  {
+  fuSearch=v;
+  const clr=document.getElementById('fu-search-clear');
+  if(clr) clr.style.display=v?'block':'none';
+  renderFollowup();
+  const inp=document.getElementById('fu-search');
+  if(inp){inp.value=v; inp.focus(); inp.setSelectionRange(v.length,v.length);}
+}
+function clearFuSearch() {
+  fuSearch='';
+  const inp=document.getElementById('fu-search'), clr=document.getElementById('fu-search-clear');
+  if(inp){inp.value=''; inp.focus();}
+  if(clr) clr.style.display='none';
+  renderFollowup();
 }
 
 // Init — show cached data instantly, then sync live from Supabase
