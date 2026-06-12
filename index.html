@@ -183,6 +183,7 @@
   .badge-meetings { background: #a855f722; color: var(--purple); }
   .badge-sdr      { background: #00e5ff22; color: var(--accent); }
   .badge-sdr-src  { background: #00e5ff11; color: var(--accent); border: 1px solid var(--accent); }
+  .badge-cc       { background: #ce93d811; color: #ce93d8; border: 1px solid #ce93d844; }
   .badge-hot      { background: #ff4d4d22; color: var(--hot); }
   .badge-warm     { background: #f5a62322; color: var(--warm); }
   .badge-nurture  { background: #4a90e222; color: var(--nurture); }
@@ -1990,9 +1991,6 @@ function fuCardHTML(entry, memberName, idx) {
   const emailLine = entry.contactEmail
     ? `<div style="font-size:9px;margin-top:2px"><a href="mailto:${entry.contactEmail}" style="color:var(--accent);text-decoration:none;opacity:.8" onclick="event.stopPropagation()">${entry.contactEmail}</a></div>`
     : '';
-  const ccLine = entry.ccEmail
-    ? `<div style="font-size:9px;margin-top:3px;display:flex;align-items:center;gap:4px"><span style="color:var(--muted);font-size:8px;letter-spacing:1px">CC</span><a href="mailto:${entry.ccEmail}" style="color:var(--muted2);text-decoration:none;opacity:.8" onclick="event.stopPropagation()">${entry.ccName?entry.ccName+' &lt;'+entry.ccEmail+'&gt;':entry.ccEmail}</a></div>`
-    : '';
   const esc = s => (s||'').replace(/"/g,'&quot;');
   return `<div>
     <div class="fu-card ${lt}${entry.followedUp?' done':''}" onclick="openFuDetail('${entry.id}')" style="cursor:pointer">
@@ -2001,13 +1999,13 @@ function fuCardHTML(entry, memberName, idx) {
           <div class="fu-card-co">${entry.company}</div>
           <div class="fu-card-contact">${contactLine}</div>
           ${emailLine}
-          ${ccLine}
           ${entry.note?`<div class="fu-card-note">${entry.note.length>90?entry.note.slice(0,90)+'…':entry.note}</div>`:''}
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
             <span class="badge badge-${lt}">${ltEmoji[lt]} ${lt.toUpperCase()}</span>
             ${entry.block?`<span class="badge" style="background:var(--bg4);color:var(--muted);border:1px solid var(--border)">${FU_BLBL[entry.block]||entry.block}</span>`:''}
             ${entry.size?`<span class="badge" style="background:var(--bg4);color:var(--gold);border:1px solid #ffd54f33">${entry.size}</span>`:''}
             ${entry.sdrSource?`<span class="badge badge-sdr-src">SDR: ${entry.sdrSource}</span>`:''}
+            ${entry.ccName?`<span class="badge badge-cc">CC: ${entry.ccName}</span>`:''}
             ${entry.followedUp?`<span class="badge" style="background:#00e67622;color:var(--green)">✓ SENT</span>`:''}
           </div>
         </div>
