@@ -1,0 +1,2125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shoptalk — Pipeline Command Center v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f2333;
+    --bg2: #132b3d;
+    --bg3: #132b3d;
+    --bg4: #0d1f2d;
+    --border: #1e3a52;
+    --border2: #2e5470;
+    --text: #f0f4f8;
+    --muted: #7a9ab5;
+    --muted2: #5a7a95;
+    --accent: #00d4ff;
+    --green: #00e676;
+    --orange: #ff7043;
+    --purple: #ce93d8;
+    --hot: #ff5252;
+    --warm: #ffab40;
+    --nurture: #64b5f6;
+    --gold: #ffd54f;
+    --silver: #b0bec5;
+    --bronze: #ffb74d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; }
+  ::-webkit-scrollbar { width: 4px; background: var(--bg4); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* HEADER */
+  .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; color: var(--accent); line-height: 1; }
+  .logo-sub { font-size: 8px; letter-spacing: 4px; color: var(--muted); margin-top: 2px; }
+  .header-stats { display: flex; align-items: center; gap: 20px; }
+  .hstat { text-align: right; }
+  .hstat-label { font-size: 8px; letter-spacing: 3px; color: var(--muted); }
+  .hstat-value { font-family: 'Bebas Neue'; font-size: 24px; line-height: 1.1; }
+  .hstat-sub { font-size: 9px; color: var(--muted); }
+  .divider { width: 1px; height: 36px; background: var(--border); }
+  .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* TABS */
+  .tabs { border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 0; background: var(--bg2); }
+  .tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 11px 16px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); cursor: pointer; transition: all 0.2s; margin-bottom: -1px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* CONTENT */
+  .content { padding: 24px 28px; max-width: 1100px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--bg3); border: 1px solid var(--border); padding: 18px 20px; }
+  .card-title { font-size: 8px; letter-spacing: 3px; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; }
+
+  /* GRIDS */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .span2 { grid-column: span 2; }
+  @media (max-width: 800px) { .grid3 { grid-template-columns: 1fr 1fr; } .span2 { grid-column: span 1; } }
+  @media (max-width: 560px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+  /* BAR */
+  .bar-track { background: var(--bg4); border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+
+  /* FORM ELEMENTS */
+  select, input[type=text] { background: var(--bg4); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px; padding: 9px 12px; outline: none; width: 100%; transition: border-color 0.2s; -webkit-appearance: none; border-radius: 0; }
+  select:focus, input:focus { border-color: var(--accent); }
+  select option { background: var(--bg4); }
+
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 8px; letter-spacing: 2px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
+
+  /* LEAD SELECTOR */
+  .lead-selector { display: flex; gap: 8px; }
+  .lead-btn { flex: 1; padding: 9px 6px; border: 1px solid var(--border); background: var(--bg4); color: var(--muted); cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; text-align: center; transition: all 0.15s; }
+  .lead-btn .emoji { font-size: 16px; display: block; margin-bottom: 3px; }
+  .lead-btn .name { display: block; letter-spacing: 1px; }
+  .lead-btn .pct { display: block; font-size: 9px; margin-top: 3px; color: var(--muted); }
+  .lead-btn:hover { border-color: var(--border2); color: var(--text); }
+  .lead-btn.active-hot { border-color: var(--hot); color: var(--hot); background: #ff4d4d11; }
+  .lead-btn.active-warm { border-color: var(--warm); color: var(--warm); background: #f5a62311; }
+  .lead-btn.active-nurture { border-color: var(--nurture); color: var(--nurture); background: #4a90e211; }
+  .lead-btn.active-hot .pct, .lead-btn.active-warm .pct, .lead-btn.active-nurture .pct { color: inherit; }
+
+  /* BUTTONS */
+  .btn-primary { width: 100%; background: var(--accent); color: #0f2333; border: none; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 11px 20px; font-weight: 500; transition: all 0.15s; margin-top: 4px; }
+  .btn-primary:hover { background: #40f0ff; }
+  .btn-ghost { background: none; color: var(--muted); border: 1px solid var(--border); cursor: pointer; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; padding: 7px 13px; transition: all 0.15s; }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+  .btn-sm { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px; padding: 5px 10px; cursor: pointer; transition: all 0.15s; }
+  .btn-sm:hover { color: var(--text); border-color: var(--border2); }
+
+  /* SCORED PREVIEW */
+  .score-preview { background: var(--bg4); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
+  .score-preview .label { font-size: 9px; letter-spacing: 2px; color: var(--muted); }
+  .score-preview .value { font-family: 'Bebas Neue'; font-size: 22px; }
+
+  /* TAGS */
+  .lead-tag { display: inline-block; padding: 2px 7px; font-size: 8px; letter-spacing: 1px; font-weight: 500; }
+  .tag-hot { background: #ff4d4d22; color: var(--hot); }
+  .tag-warm { background: #f5a62322; color: var(--warm); }
+  .tag-nurture { background: #4a90e222; color: var(--nurture); }
+  .team-tag { display: inline-block; font-size: 8px; letter-spacing: 1px; padding: 2px 6px; }
+  .team-booth { color: var(--orange); }
+  .team-mtg { color: var(--purple); }
+
+  /* PROGRESS */
+  .progress-wrap { margin-bottom: 0; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--muted); margin-top: 5px; letter-spacing: 1px; }
+
+  /* BIG NUMBERS */
+  .big { font-family: 'Bebas Neue'; line-height: 1; }
+
+  /* FLASH */
+  #flash { position: fixed; top: 18px; right: 18px; z-index: 999; background: var(--accent); color: #0f2333; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; padding: 12px 20px; letter-spacing: 1px; display: none; animation: slideIn 0.3s ease; }
+  @keyframes slideIn { from { opacity:0; transform: translateY(-8px); } to { opacity:1; transform: none; } }
+
+  /* STATUS */
+  .status { font-size: 12px; padding: 9px 13px; margin-top: 10px; display: none; }
+  .status-ok { background: #00ff8822; color: var(--green); }
+  .status-err { background: #ff4d4d22; color: var(--hot); }
+  .status-load { background: var(--bg4); color: var(--muted); }
+
+  /* BLOCK PILLS */
+  .block-pill { display: inline-block; padding: 5px 13px; font-size: 9px; letter-spacing: 2px; cursor: pointer; border: 1px solid var(--border); color: var(--muted); margin-right: 6px; margin-bottom: 6px; transition: all 0.15s; background: none; font-family: 'DM Mono', monospace; text-transform: uppercase; }
+  .block-pill:hover { border-color: var(--border2); color: var(--text); }
+  .block-pill.active { border-color: var(--accent); color: var(--accent); background: #00e5ff11; }
+
+  /* ENTRY CHIP */
+  .entry-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg4); padding: 5px 10px; font-size: 10px; margin: 3px; }
+
+  /* LEADERBOARD ROW */
+  .lb-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .lb-rank { font-family: 'Bebas Neue'; font-size: 20px; width: 26px; text-align: center; color: var(--muted); }
+  .lb-name { flex: 1; font-size: 12px; }
+  .lb-val { text-align: right; }
+  .lb-val .main { font-size: 12px; }
+  .lb-val .sub { font-size: 9px; color: var(--muted); }
+
+  /* MEMBER BAR ROW */
+  .mbar { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .mbar-name { width: 72px; font-size: 11px; color: var(--muted); flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mbar-val { width: 54px; text-align: right; font-size: 10px; color: var(--muted); flex-shrink: 0; }
+
+  /* LEAD SUMMARY CARDS */
+  .lead-summary { }
+  .lead-summary .big { font-size: 30px; }
+  .lead-summary .scored { font-size: 12px; margin-top: 6px; }
+  .lead-summary .raw { font-size: 10px; color: var(--muted); }
+
+  .section-gap { margin-bottom: 16px; }
+  .row-between { display: flex; justify-content: space-between; align-items: center; }
+  .empty { color: var(--border2); font-size: 12px; text-align: center; padding: 32px 0; letter-spacing: 2px; }
+
+  /* PIPELINE TAB */
+  .pip-row { background: var(--bg3); border: 1px solid var(--border); padding: 14px 16px; margin-bottom: 8px; display: grid; grid-template-columns: 2fr 1.2fr 1fr auto; gap: 12px; align-items: center; transition: border-color 0.15s; cursor: pointer; }
+  .pip-row:hover { border-color: var(--border2); background: #132b3d; }
+
+  /* EDIT MODAL */
+  .modal-overlay { position:fixed; inset:0; background:#0a1828cc; z-index:500; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+  .modal-box { background:var(--bg2); border:1px solid var(--border2); padding:28px 30px; width:100%; max-width:460px; max-height:90vh; overflow-y:auto; position:relative; }
+  .modal-title { font-size:8px; letter-spacing:3px; color:var(--accent); margin-bottom:20px; text-transform:uppercase; }
+  .modal-company { font-size:18px; font-weight:600; color:var(--text); margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+  .pip-row.flag-owner { border-left: 3px solid var(--hot); }
+  .pip-row.flag-sdr   { border-left: 3px solid var(--accent); }
+  .pip-co   { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pip-note { font-size: 9px; color: var(--muted2); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+  .pip-owner { font-size: 11px; color: var(--muted); }
+  .pip-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .badge { display: inline-block; padding: 2px 6px; font-size: 8px; letter-spacing: 1px; font-weight: 500; }
+  .badge-booth    { background: #ff6b3522; color: var(--orange); }
+  .badge-meetings { background: #a855f722; color: var(--purple); }
+  .badge-sdr      { background: #00e5ff22; color: var(--accent); }
+  .badge-sdr-src  { background: #00e5ff11; color: var(--accent); border: 1px solid var(--accent); }
+  .badge-hot      { background: #ff4d4d22; color: var(--hot); }
+  .badge-warm     { background: #f5a62322; color: var(--warm); }
+  .badge-nurture  { background: #4a90e222; color: var(--nurture); }
+  .badge-noowner  { background: #ff525222; color: var(--hot); }
+  .pip-val { text-align: right; }
+  .pip-val .scored { font-family: 'Bebas Neue'; font-size: 20px; line-height: 1; }
+  .pip-val .raw    { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+  /* FOLLOW-UP TAB */
+  .fu-card { background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--border2); padding: 13px 14px; margin-bottom: 8px; transition: border-color .12s; }
+  .fu-card:hover { border-color: var(--border2); }
+  .fu-card.hot    { border-left-color: var(--hot); }
+  .fu-card.warm   { border-left-color: var(--warm); }
+  .fu-card.nurture{ border-left-color: var(--nurture); }
+  .fu-card.done   { opacity: .42; }
+  .fu-card-co { font-size: 13px; font-weight: 500; }
+  .fu-card-contact{ font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .fu-card-note   { font-size: 9px; color: var(--muted2); margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1px solid var(--border); padding-top: 5px; }
+  .fu-mark-sent   { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px; padding: 4px 9px; cursor: pointer; transition: all .15s; }
+  .fu-mark-sent:hover { border-color: var(--green); color: var(--green); }
+  .fu-mark-sent.sent  { border-color: var(--green); color: var(--green); background: #00e67611; }
+  .fu-etab.active { border-color: var(--accent) !important; color: var(--accent) !important; background: #00e5ff11 !important; }
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+
+<!-- HEADER -->
+<div class="header" style="flex-wrap:nowrap">
+  <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:22px;letter-spacing:1px;color:#f0f4f8;line-height:1;text-transform:uppercase;flex-shrink:0">SHOPTALK</div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:22px;color:#5a8ac3;line-height:1;flex-shrink:0">X</div>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400.84 146.98" style="height:40px;width:auto;flex-shrink:0;margin-top:-10px">
+      <path fill="#5a8ac3" d="M346.35,39.59c0,3.6,3.09,5.66,8.48,5.66,8.52,0,12.08-5.28,12.64-10.49h-13.22c-3.61,0-7.9.84-7.9,4.83Z"/>
+      <path fill="#5a8ac3" d="M398.27,20.51c-2.18-5.03-5.56-9.53-9.84-13.03-.46,1.69-2.13,2.95-4.13,2.95-2.35,0-4.26-1.74-4.26-3.88,0-1.37.75-2.56,1.9-3.24-4.31-2.1-9.16-3.31-14.36-3.31-25.6,0-34.63,20.94-34.63,34.06,0,14.85,9.37,29.68,27.78,33.17,1.07.2,1.57,1.44.95,2.34-4.41,6.41-8.21,5.17-8.21,7.94,0,1.23,1.31,2.32,3.39,2.32,7.89,0,43.97-18.19,43.97-45.25,0-4.8-.67-9.7-2.56-14.07h0ZM373.94,50.44h-6.44l.18-4.75c-2.86,3.54-7.73,5.58-13.56,5.58-8.73,0-14.38-4.56-14.38-11.62s5.19-10.6,14.25-10.6h13.47v-2.08c0-3.48-2.6-7.2-9.89-7.2-5.76,0-11.84,2.72-13,3.26l-1.05.49v-7.07l.73-.25c4.96-1.67,9.42-2.52,13.26-2.52,7.94,0,16.42,3.72,16.42,14.18v22.57h0ZM387.67,50.44h-6.6v-29.84h-4.67v-6.09h11.27v35.92h0Z"/>
+      <path fill="#f0f4f8" d="M0,117.86v-55.99h10.26l-.35,7.92c3.31-5.99,8.57-9.12,15.49-9.12,2.92,0,5.78.53,8.49,1.57l.71.27v10.5l-1.46-.49c-.12-.04-.27-.1-.5-.2-1.09-.45-3.97-1.65-7.35-1.65-14.09,0-15.18,21.49-15.18,28.07v19.1H0Z"/>
+      <path fill="#f0f4f8" d="M66.97,119.16c-8.16,0-15.8-3.04-21.52-8.56-5.72-5.52-8.87-12.88-8.87-20.74s3.15-15.22,8.87-20.74c5.72-5.52,13.36-8.56,21.52-8.56,9.54,0,18.31,4.24,24.06,11.62l.6.77-34.24,34.54c2.9,1.49,6.12,2.24,9.58,2.24,6.9,0,14.61-3.22,20.65-8.61l1.85-1.65v12.35l-.47.33c-4.83,3.38-13.15,7-22.03,7ZM66.97,69.99c-5.53,0-10.65,2.09-14.43,5.89-3.71,3.73-5.75,8.7-5.75,13.99,0,4.15,1.24,8.15,3.5,11.4l27.66-28.13c-3.13-2.03-6.98-3.14-10.98-3.14h0Z"/>
+      <path fill="#f0f4f8" d="M93.64,117.86l37.58-46.68h-33.37v-9.31h53.51l-37.68,46.57h35.17v9.41h-55.2Z"/>
+      <path fill="#f0f4f8" d="M180.74,119.16c-16.7,0-30.29-13.14-30.29-29.29s13.59-29.29,30.29-29.29,30.39,13.14,30.39,29.29-13.63,29.29-30.39,29.29ZM180.74,69.99c-5.45,0-10.53,2.09-14.3,5.89-3.72,3.75-5.77,8.71-5.77,13.99s2.05,10.24,5.77,13.99c3.78,3.8,8.86,5.9,14.3,5.9,11.13,0,20.18-8.92,20.18-19.88s-9.05-19.88-20.18-19.88h0Z"/>
+      <path fill="#f0f4f8" d="M228.49,39.88h-10.11v77.98h10.11V39.88Z"/>
+      <path fill="#f0f4f8" d="M234.71,61.87h11.39l18.39,38.42,18.39-38.42h11.38l-29.78,59.66-29.78-59.66Z"/>
+      <path fill="#f0f4f8" d="M323.03,119.16c-8.16,0-15.8-3.04-21.52-8.56-5.72-5.52-8.87-12.88-8.87-20.74s3.15-15.22,8.87-20.74c5.72-5.52,13.36-8.56,21.52-8.56,9.54,0,18.31,4.24,24.06,11.62l.6.77-34.24,34.54c2.9,1.49,6.12,2.24,9.58,2.24,6.9,0,14.61-3.22,20.65-8.61l1.85-1.65v12.35l-.47.33c-4.83,3.38-13.15,7-22.02,7ZM323.03,69.99c-5.53,0-10.65,2.09-14.43,5.89-3.71,3.73-5.75,8.7-5.75,13.99,0,4.15,1.24,8.15,3.5,11.4l27.66-28.13c-3.13-2.03-6.98-3.14-10.98-3.14h0Z"/>
+      <path fill="#5a8ac3" d="M8.57,141.94c-.66,1.39-2.27,2.3-4.39,2.3-2.56,0-4.16-1.31-4.16-3.32,0-1.84,1.35-3.01,4.12-3.01h4.34v-.86c0-1.68-1.54-2.42-3.24-2.42s-3.44.72-4.06,1.02v-1.64c.41-.14,2.23-.78,4.04-.78,2.15,0,4.78.92,4.78,4.1v6.66h-1.5l.08-2.05ZM4.22,139.2c-1.46,0-2.64.45-2.64,1.7,0,.98.7,1.95,2.81,1.95,2.71,0,4-1.74,4.1-3.65h-4.28Z"/>
+      <path fill="#5a8ac3" d="M22.32,141.8c-.94,1.52-2.68,2.44-4.51,2.44-3.01,0-5.49-2.46-5.49-5.51s2.48-5.51,5.49-5.51c1.84,0,3.57.92,4.51,2.44,0,0-.14-1.17-.14-2.62v-3.87h1.54v14.8h-1.48l.08-2.19ZM18.02,142.84c2.34,0,4.16-1.87,4.16-4.1s-1.82-4.1-4.16-4.1-4.14,1.87-4.14,4.1,1.8,4.1,4.14,4.1Z"/>
+      <path fill="#5a8ac3" d="M25.5,133.48h1.74l3.73,7.79,3.73-7.79h1.74l-5.47,10.96-5.47-10.96Z"/>
+      <path fill="#5a8ac3" d="M45.84,141.94c-.66,1.39-2.27,2.3-4.39,2.3-2.56,0-4.16-1.31-4.16-3.32,0-1.84,1.35-3.01,4.12-3.01h4.34v-.86c0-1.68-1.54-2.42-3.24-2.42s-3.44.72-4.06,1.02v-1.64c.41-.14,2.23-.78,4.04-.78,2.15,0,4.78.92,4.78,4.1v6.66h-1.5l.08-2.05ZM41.49,139.2c-1.46,0-2.64.45-2.64,1.7,0,.98.7,1.95,2.81,1.95,2.71,0,4-1.74,4.1-3.65h-4.28Z"/>
+      <path fill="#5a8ac3" d="M50.41,133.48h1.48l-.06,2.19c.43-.74,1.8-2.44,4.39-2.44,2.73,0,4.63,1.89,4.63,4.94v5.82h-1.56v-5.78c0-1.93-.9-3.53-3.12-3.53-2.42,0-4.22,1.87-4.22,4.1v5.21h-1.54v-10.51Z"/>
+      <path fill="#5a8ac3" d="M72.98,142.91c-.78.55-2.38,1.33-4.18,1.33-3.18,0-5.72-2.46-5.72-5.51s2.54-5.51,5.72-5.51c1.8,0,3.4.78,4.18,1.35v1.82c-1.27-1.15-2.83-1.76-4.18-1.76-2.38,0-4.16,1.87-4.16,4.1s1.78,4.1,4.16,4.1c1.33,0,2.89-.59,4.18-1.74v1.82Z"/>
+      <path fill="#5a8ac3" d="M84.61,142.91c-.78.55-2.38,1.33-4.18,1.33-3.18,0-5.72-2.46-5.72-5.51s2.54-5.51,5.72-5.51c1.87,0,3.5.86,4.53,2.19l-6.76,6.82c.64.39,1.39.61,2.23.61,1.33,0,2.89-.59,4.18-1.74v1.82ZM82.91,135.43c-.64-.49-1.52-.8-2.48-.8-2.38,0-4.16,1.87-4.16,4.1,0,.96.31,1.86.88,2.56l5.76-5.86Z"/>
+      <path fill="#5a8ac3" d="M96.5,141.8c-.94,1.52-2.68,2.44-4.51,2.44-3.01,0-5.49-2.46-5.49-5.51s2.48-5.51,5.49-5.51c1.84,0,3.57.92,4.51,2.44,0,0-.14-1.17-.14-2.62v-3.87h1.54v14.8h-1.48l.08-2.19ZM92.21,142.84c2.34,0,4.16-1.87,4.16-4.1s-1.82-4.1-4.16-4.1-4.14,1.87-4.14,4.1,1.8,4.1,4.14,4.1Z"/>
+      <path fill="#f0f4f8" d="M355.56,106.2h3.37c1.91,0,3.21,1.24,3.21,2.75,0,1.09-.67,2.02-1.75,2.49l1.84,3.63h-1.14l-1.7-3.39h-2.8v3.39h-1.03v-8.88ZM358.96,110.79c1.35,0,2.16-.84,2.16-1.84s-.79-1.84-2.18-1.84h-2.35v3.67h2.37Z"/>
+      <path fill="#f0f4f8" d="M358.56,118.77c-4.4,0-7.98-3.58-7.98-7.98s3.58-7.98,7.98-7.98,7.98,3.58,7.98,7.98-3.58,7.98-7.98,7.98ZM358.56,103.96c-3.76,0-6.82,3.06-6.82,6.82s3.06,6.82,6.82,6.82,6.82-3.06,6.82-6.82-3.06-6.82-6.82-6.82Z"/>
+      <path fill="#7a9ab5" d="M114.95,142.91c-.78.55-2.38,1.33-4.18,1.33-3.18,0-5.72-2.46-5.72-5.51s2.54-5.51,5.72-5.51c1.8,0,3.4.78,4.18,1.35v1.82c-1.27-1.15-2.83-1.76-4.18-1.76-2.38,0-4.16,1.87-4.16,4.1s1.78,4.1,4.16,4.1c1.33,0,2.89-.59,4.18-1.74v1.82Z"/>
+      <path fill="#7a9ab5" d="M122.39,133.23c3.16,0,5.72,2.46,5.72,5.51s-2.56,5.51-5.72,5.51-5.7-2.46-5.7-5.51,2.56-5.51,5.7-5.51ZM122.39,142.84c2.34,0,4.16-1.87,4.16-4.1s-1.82-4.1-4.16-4.1-4.14,1.87-4.14,4.1,1.8,4.1,4.14,4.1Z"/>
+      <path fill="#7a9ab5" d="M130.56,133.48h1.48l-.04,1.82c.23-.64,1.31-2.07,3.38-2.07s3.16,1.45,3.52,2.15c.33-.66,1.23-2.15,3.55-2.15s4.32,1.54,4.32,4.59v6.17h-1.54v-6.15c0-1.97-.9-3.16-2.79-3.16s-3.01,1.21-3.01,3.16v6.15h-1.54v-6.15c0-1.84-.92-3.16-2.66-3.16-1.87,0-3.12,1.56-3.12,4.04v5.27h-1.54v-10.51Z"/>
+      <path fill="#7a9ab5" d="M149.91,133.48h1.48l-.04,1.82c.23-.64,1.31-2.07,3.38-2.07s3.16,1.45,3.52,2.15c.33-.66,1.23-2.15,3.55-2.15s4.32,1.54,4.32,4.59v6.17h-1.54v-6.15c0-1.97-.9-3.16-2.79-3.16s-3.01,1.21-3.01,3.16v6.15h-1.54v-6.15c0-1.84-.92-3.16-2.66-3.16-1.87,0-3.12,1.56-3.12,4.04v5.27h-1.54v-10.51Z"/>
+      <path fill="#5a8ac3" d="M178.34,142.91c-.78.55-2.38,1.33-4.18,1.33-3.18,0-5.72-2.46-5.72-5.51s2.54-5.51,5.72-5.51c1.87,0,3.5.86,4.53,2.19l-6.76,6.82c.64.39,1.39.61,2.23.61,1.33,0,2.89-.59,4.18-1.74v1.82ZM176.64,135.43c-.64-.49-1.52-.8-2.48-.8-2.38,0-4.16,1.87-4.16,4.1,0,.96.31,1.86.88,2.56l5.76-5.86Z"/>
+      <path fill="#7a9ab5" d="M181.05,133.48h1.56l-.12,2.62c.33-1.23,1.15-2.85,3.3-2.85.76,0,1.33.2,1.58.29v1.6c-.12-.04-.78-.37-1.6-.37-2.71,0-3.18,3.67-3.18,5.7v3.52h-1.54v-10.51Z"/>
+      <path fill="#7a9ab5" d="M197.86,142.91c-.78.55-2.38,1.33-4.18,1.33-3.18,0-5.72-2.46-5.72-5.51s2.54-5.51,5.72-5.51c1.8,0,3.4.78,4.18,1.35v1.82c-1.27-1.15-2.83-1.76-4.18-1.76-2.38,0-4.16,1.87-4.16,4.1s1.78,4.1,4.16,4.1c1.33,0,2.89-.59,4.18-1.74v1.82Z"/>
+      <path fill="#7a9ab5" d="M209.5,142.91c-.78.55-2.38,1.33-4.18,1.33-3.18,0-5.72-2.46-5.72-5.51s2.54-5.51,5.72-5.51c1.87,0,3.5.86,4.53,2.19l-6.76,6.82c.64.39,1.39.61,2.23.61,1.33,0,2.89-.59,4.18-1.74v1.82ZM207.8,135.43c-.64-.49-1.52-.8-2.48-.8-2.38,0-4.16,1.87-4.16,4.1,0,.96.31,1.86.88,2.56l5.76-5.86Z"/>
+      <path fill="#7a9ab5" d="M217.81,134.89h-2.21v-1.41h2.21v-2.5h1.54v2.5h5.19v1.39h-5.19v5.55c0,1.48.96,2.4,2.36,2.4.96,0,1.74-.43,2.19-.96v1.78c-.59.35-1.37.61-2.25.61-2.19,0-3.85-1.52-3.85-3.83v-5.53Z"/>
+      <path fill="#7a9ab5" d="M235.13,142.91c-.78.55-2.38,1.33-4.18,1.33-3.18,0-5.72-2.46-5.72-5.51s2.54-5.51,5.72-5.51c1.87,0,3.5.86,4.53,2.19l-6.76,6.82c.64.39,1.39.61,2.23.61,1.33,0,2.89-.59,4.18-1.74v1.82ZM233.43,135.43c-.64-.49-1.52-.8-2.48-.8-2.38,0-4.16,1.87-4.16,4.1,0,.96.31,1.86.88,2.56l5.76-5.86Z"/>
+      <path fill="#7a9ab5" d="M246.92,142.91c-.78.55-2.38,1.33-4.18,1.33-3.18,0-5.72-2.46-5.72-5.51s2.54-5.51,5.72-5.51c1.8,0,3.4.78,4.18,1.35v1.82c-1.27-1.15-2.83-1.76-4.18-1.76-2.38,0-4.16,1.87-4.16,4.1s1.78,4.1,4.16,4.1c1.33,0,2.89-.59,4.18-1.74v1.82Z"/>
+      <path fill="#7a9ab5" d="M249.47,129.18h1.54v3.87c0,1.45-.12,2.62-.12,2.62.43-.74,1.8-2.44,4.39-2.44,2.73,0,4.63,1.89,4.63,4.94v5.82h-1.56v-5.78c0-1.93-.9-3.53-3.12-3.53-2.42,0-4.22,1.87-4.22,4.1v5.21h-1.54v-14.8Z"/>
+      <path fill="#7a9ab5" d="M262.96,133.48h1.48l-.06,2.19c.43-.74,1.8-2.44,4.39-2.44,2.73,0,4.63,1.89,4.63,4.94v5.82h-1.56v-5.78c0-1.93-.9-3.53-3.12-3.53-2.42,0-4.22,1.87-4.22,4.1v5.21h-1.54v-10.51Z"/>
+      <path fill="#7a9ab5" d="M281.34,133.23c3.16,0,5.72,2.46,5.72,5.51s-2.56,5.51-5.72,5.51-5.7-2.46-5.7-5.51,2.56-5.51,5.7-5.51ZM281.34,142.84c2.34,0,4.16-1.87,4.16-4.1s-1.82-4.1-4.16-4.1-4.14,1.87-4.14,4.1,1.8,4.1,4.14,4.1Z"/>
+      <path fill="#7a9ab5" d="M289.51,129.18h1.54v14.8h-1.54v-14.8Z"/>
+      <path fill="#7a9ab5" d="M299.22,133.23c3.16,0,5.72,2.46,5.72,5.51s-2.56,5.51-5.72,5.51-5.7-2.46-5.7-5.51,2.56-5.51,5.7-5.51ZM299.22,142.84c2.34,0,4.16-1.87,4.16-4.1s-1.82-4.1-4.16-4.1-4.14,1.87-4.14,4.1,1.8,4.1,4.14,4.1Z"/>
+      <path fill="#7a9ab5" d="M308.57,142.17c-1.21-.96-1.93-2.36-1.93-3.91,0-2.79,2.36-5.08,5.21-5.08.53,0,1.02.08,1.45.21l1.27-2.42h1.7l-1.6,2.99c1.48.9,2.48,2.48,2.48,4.3,0,2.77-2.34,5.06-5.21,5.06-.76,0-1.46-.16-2.07-.43l-1.39,2.62h8.89v1.46h-11.29l2.5-4.8ZM311.89,141.96c2.11,0,3.75-1.68,3.75-3.69s-1.64-3.71-3.75-3.71-3.75,1.68-3.75,3.71,1.62,3.69,3.75,3.69Z"/>
+      <path fill="#7a9ab5" d="M320.11,134.89h-1.43v-1.41h2.99v10.51h-1.56v-9.1ZM320.87,129.87c.57,0,1.07.39,1.07.96s-.51.96-1.07.96-1.07-.41-1.07-.96.51-.96,1.07-.96Z"/>
+      <path fill="#7a9ab5" d="M334.07,142.91c-.78.55-2.38,1.33-4.18,1.33-3.18,0-5.72-2.46-5.72-5.51s2.54-5.51,5.72-5.51c1.87,0,3.5.86,4.53,2.19l-6.76,6.82c.64.39,1.39.61,2.23.61,1.33,0,2.89-.59,4.18-1.74v1.82ZM332.37,135.43c-.64-.49-1.52-.8-2.48-.8-2.38,0-4.16,1.87-4.16,4.1,0,.96.31,1.86.88,2.56l5.76-5.86Z"/>
+      <path fill="#7a9ab5" d="M336.09,141.57c.88.61,2.81,1.23,4.65,1.23,1.93,0,3.18-.7,3.18-1.82s-1.31-1.39-2.75-1.56l-.82-.1c-2.03-.23-4.28-.94-4.28-3.07,0-2.38,2.77-3.03,4.69-3.03s3.65.59,4.16.72v1.64c-.68-.27-2.42-.94-4.26-.94-1.52,0-2.99.45-2.99,1.54s1.41,1.37,2.7,1.52l.8.1c1.78.21,4.36.64,4.36,3.03s-2.46,3.4-4.98,3.4c-1.87,0-3.65-.61-4.45-.92v-1.76Z"/>
+    </svg>
+  </div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="hstat-label">Scored Pipeline</div>
+      <div class="hstat-value" id="h-scored" style="color:#fff">$0</div>
+      <div class="hstat-sub" id="h-raw">raw $0</div>
+    </div>
+    <div class="divider"></div>
+    <div class="hstat">
+      <div class="hstat-label">Target</div>
+      <div class="hstat-value" style="color:var(--muted)" id="h-target">$16.5M</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--accent)" id="h-pct">0%</div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div class="pulse-dot" id="sync-dot"></div>
+        <div style="font-size:8px;letter-spacing:2px;color:var(--muted)" id="sync-label">CONNECTING</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('dashboard')">📊 Overview</button>
+  <button class="tab" onclick="showTab('log')">➕ Log Entry</button>
+  <button class="tab" onclick="showTab('pipeline')">💼 Pipeline</button>
+  <button class="tab" onclick="showTab('followup')">📧 Follow-up</button>
+  <button class="tab" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
+  <button class="tab" onclick="showTab('blocks')">📅 By Block</button>
+</div>
+
+<div class="content">
+
+  <!-- DASHBOARD -->
+  <div id="panel-dashboard" class="panel active">
+    <!-- Lead type row -->
+    <div class="grid3 section-gap" id="lead-cards"></div>
+
+    <!-- Team cards -->
+    <div class="grid2 section-gap">
+      <div class="card" id="booth-card" style="border-color:#ff6b3533">
+        <div class="card-title" style="color:var(--orange)">Booth Team · $750k × 5</div>
+        <div class="row-between" style="margin-bottom:12px;align-items:flex-end">
+          <div>
+            <div class="big" style="font-size:34px" id="booth-scored">$0</div>
+            <div style="font-size:9px;color:var(--muted)">scored pipeline</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:8px;color:var(--muted);letter-spacing:2px">TARGET</div>
+            <div class="big" style="font-size:18px;color:var(--muted)" id="booth-target">$6.0M</div>
+          </div>
+        </div>
+        <div class="bar-track" style="height:6px"><div class="bar-fill" id="booth-bar" style="background:var(--orange);width:0%"></div></div>
+        <div class="progress-labels"><span id="booth-pct">0%</span><span id="booth-rem">$6M to go</span></div>
+        <div style="margin-top:14px" id="booth-members"></div>
+      </div>
+      <div class="card" id="mtg-card" style="border-color:#a855f733">
+        <div class="card-title" style="color:var(--purple)">Meetings Team · $1.5M × 6</div>
+        <div class="row-between" style="margin-bottom:12px;align-items:flex-end">
+          <div>
+            <div class="big" style="font-size:34px" id="mtg-scored">$0</div>
+            <div style="font-size:9px;color:var(--muted)">scored pipeline</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:8px;color:var(--muted);letter-spacing:2px">TARGET</div>
+            <div class="big" style="font-size:18px;color:var(--muted)" id="mtg-target">$10.5M</div>
+          </div>
+        </div>
+        <div class="bar-track" style="height:6px"><div class="bar-fill" id="mtg-bar" style="background:var(--purple);width:0%"></div></div>
+        <div class="progress-labels"><span id="mtg-pct">0%</span><span id="mtg-rem">$10.5M to go</span></div>
+        <div style="margin-top:14px" id="mtg-members"></div>
+      </div>
+    </div>
+
+    <!-- SDR card -->
+    <div class="section-gap">
+      <div class="card" id="sdr-card" style="border-color:#00d4ff33">
+        <div class="card-title" style="color:var(--accent)">SDR Team · $750k × 3</div>
+        <div class="grid2" style="gap:14px;align-items:flex-end;margin-bottom:12px">
+          <div>
+            <div class="big" style="font-size:34px" id="sdr-scored">$0</div>
+            <div style="font-size:9px;color:var(--muted)">own scored pipeline</div>
+          </div>
+          <div style="display:flex;gap:24px;text-align:right">
+            <div>
+              <div style="font-size:8px;color:var(--muted);letter-spacing:2px">OWN TARGET</div>
+              <div class="big" style="font-size:16px;color:var(--muted)" id="sdr-target-label">$2.25M</div>
+            </div>
+            <div>
+              <div style="font-size:8px;color:var(--muted);letter-spacing:2px">ATTRIBUTED</div>
+              <div class="big" style="font-size:16px;color:var(--accent)" id="sdr-attributed">$0</div>
+            </div>
+            <div>
+              <div style="font-size:8px;color:var(--muted);letter-spacing:2px">MTGs SOURCED</div>
+              <div class="big" style="font-size:16px;color:var(--green)" id="sdr-sourced-count">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="bar-track" style="height:5px"><div class="bar-fill" id="sdr-bar" style="background:var(--accent);width:0%"></div></div>
+        <div class="progress-labels"><span id="sdr-pct">0%</span><span id="sdr-rem">$2.25M to go</span></div>
+        <div style="margin-top:14px" id="sdr-members"></div>
+      </div>
+    </div>
+
+    <!-- Total + engagements -->
+    <div class="grid3 section-gap">
+      <div class="card span2" style="border-color:#00e5ff33">
+        <div class="card-title" style="color:var(--accent)">Combined Target Progress</div>
+        <div class="row-between" style="margin-bottom:12px;align-items:flex-end">
+          <div>
+            <div class="big" style="font-size:46px" id="total-scored">$0</div>
+            <div style="font-size:9px;color:var(--muted)" id="total-raw-label">scored · raw $0</div>
+          </div>
+          <div style="font-size:8px;color:var(--muted);letter-spacing:2px" id="total-target">/ $16.5M</div>
+        </div>
+        <div class="bar-track" style="height:10px"><div class="bar-fill" id="total-bar" style="background:var(--accent);width:0%"></div></div>
+        <div class="progress-labels"><span id="total-pct">0% achieved</span><span id="total-rem">$16.5M to go</span></div>
+      </div>
+      <div class="card" style="border-color:#00ff8833">
+        <div class="card-title" style="color:var(--green)">Total Engagements</div>
+        <div class="big" style="font-size:52px;color:var(--green)" id="total-eng">0</div>
+        <div style="font-size:8px;color:var(--muted);letter-spacing:2px;margin-top:8px">MEETINGS & CONVERSATIONS</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px" id="avg-eng">avg $0 / engagement</div>
+      </div>
+    </div>
+
+    <!-- Mini leaderboards -->
+    <div class="grid2" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title" style="color:var(--gold)">🏆 Pipeline Master — Top 3</div>
+        <div id="mini-pip"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">⚡ Engagement Ninja — Top 3</div>
+        <div id="mini-eng"></div>
+      </div>
+    </div>
+    <!-- Top deals -->
+    <div class="card" style="border-color:#00d4ff33">
+      <div class="card-title" style="color:var(--accent)">💼 Top 5 Deals by Company</div>
+      <div id="top-deals"></div>
+    </div>
+  </div>
+
+  <!-- LOG ENTRY -->
+  <div id="panel-log" class="panel">
+    <div style="max-width:480px">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title" style="color:var(--accent)">Log a Meeting / Conversation</div>
+
+        <div class="field">
+          <label>Team Member</label>
+          <select id="f-name">
+            <option value="">— Select member —</option>
+            <optgroup label="Booth Team">
+              <option>Luca</option><option>Adrien</option><option>Lee</option>
+              <option>Leonard</option><option>Javed</option>
+            </optgroup>
+            <optgroup label="SDR Team">
+              <option>Zoran</option><option>Miriyam</option><option>Christina</option>
+            </optgroup>
+            <optgroup label="Meetings Team">
+              <option>Penelope</option><option>Zohra</option>
+              <option>Mara</option><option>Greg</option><option>Rawad</option><option>Georg</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Event Block</label>
+          <select id="f-block">
+            <option value="day1">Day 1 — Tuesday</option>
+            <option value="rooftop">Rooftop — Tuesday Evening</option>
+            <option value="day2">Day 2 — Wednesday</option>
+            <option value="day3breakfast">Day 3 Breakfast — Thursday AM</option>
+            <option value="day3">Day 3 — Thursday</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Lead Type</label>
+          <div class="lead-selector">
+            <button class="lead-btn active-hot" data-type="hot" onclick="selectLead('hot')">
+              <span class="emoji">🔥</span><span class="name">HOT</span><span class="pct">100%</span>
+            </button>
+            <button class="lead-btn" data-type="warm" onclick="selectLead('warm')">
+              <span class="emoji">🟡</span><span class="name">WARM</span><span class="pct">75%</span>
+            </button>
+            <button class="lead-btn" data-type="nurture" onclick="selectLead('nurture')">
+              <span class="emoji">🌱</span><span class="name">NURTURE</span><span class="pct">50%</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>T-Shirt Size</label>
+          <select id="f-size" onchange="updatePreview()">
+            <option value="50000">XS — $50k</option>
+            <option value="100000">S — $100k</option>
+            <option value="250000" selected>M — $250k</option>
+            <option value="500000">L — $500k</option>
+            <option value="1000000">XL — $1M</option>
+          </select>
+        </div>
+
+        <div class="score-preview" id="score-preview">
+          <span class="label">SCORED VALUE</span>
+          <span class="value" id="preview-val" style="color:var(--hot)">$250k</span>
+        </div>
+
+        <div class="field">
+          <label>Company</label>
+          <input type="text" id="f-company" placeholder="Company name...">
+        </div>
+        <div class="field">
+          <label>Sourced by SDR <span style="color:var(--muted2);font-size:8px;letter-spacing:1px">(optional)</span></label>
+          <select id="f-sdr">
+            <option value="">— None —</option>
+            <option>Zoran</option>
+            <option>Miriyam</option>
+            <option>Christina</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Note (optional)</label>
+          <input type="text" id="f-note" placeholder="Additional context, follow-up action...">
+        </div>
+
+        <button class="btn-primary" onclick="logEntry()">⚡ Log Entry</button>
+        <div class="status" id="log-status"></div>
+      </div>
+
+      <!-- Recent entries for selected member -->
+      <div class="card" id="recent-card" style="display:none">
+        <div class="row-between" style="margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0" id="recent-title">RECENT</div>
+          <div>
+            <span style="font-size:9px;color:var(--muted)">scored: </span>
+            <span style="font-size:11px;color:var(--accent)" id="recent-scored">$0</span>
+          </div>
+        </div>
+        <div id="recent-entries"></div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn-ghost" onclick="exportXlsx()">⬇ Export Excel</button>
+        <button class="btn-ghost" onclick="exportCsv()">⬇ Backup CSV</button>
+        <label class="btn-ghost" style="cursor:pointer">⬆ Restore CSV<input type="file" accept=".csv,text/csv" onchange="importCsv(event)" style="display:none"></label>
+      </div>
+      <div style="margin-top:6px;text-align:right;font-size:9px;color:var(--muted2)">Excel = shareable record · CSV = backup/restore. To re-import after editing in Excel, use File → Save As → CSV.</div>
+
+      <!-- Admin panel — hidden by default -->
+      <div style="margin-top:24px;text-align:right">
+        <button class="btn-sm" onclick="toggleAdmin()" style="font-size:8px;letter-spacing:2px;color:var(--muted2);border-color:transparent">⚙ admin</button>
+      </div>
+      <div id="admin-panel" style="display:none;margin-top:8px;border:1px solid var(--hot);padding:16px 18px;background:#ff525208">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--hot);margin-bottom:10px">⚠ DANGER ZONE — ADMIN ONLY</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:14px">This will permanently delete <strong style="color:var(--hot)">all entries</strong> from Supabase for everyone. Cannot be undone.</div>
+        <button onclick="resetAll()" style="background:none;border:1px solid var(--hot);color:var(--hot);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;padding:9px 16px;cursor:pointer;text-transform:uppercase">↺ Reset All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div id="panel-leaderboard" class="panel">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title" style="color:var(--gold)">💰 Pipeline Master</div>
+        <div id="lb-pipeline"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">⚡ Engagement Ninja</div>
+        <div id="lb-engagement"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BY BLOCK -->
+  <div id="panel-blocks" class="panel">
+    <div style="margin-bottom:16px" id="block-pills"></div>
+    <div id="block-content"></div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div id="panel-pipeline" class="panel">
+    <!-- KPI strip -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px" id="pip-kpis"></div>
+    <!-- Filters -->
+    <div style="margin-bottom:10px" id="pip-filters"></div>
+    <!-- AE filter pills -->
+    <div style="margin-bottom:10px" id="pip-ae-filters"></div>
+    <!-- Search -->
+    <div style="margin-bottom:14px;position:relative">
+      <input id="pip-search" type="text" placeholder="🔍  Search by company name…"
+        oninput="setPipSearch(this.value)"
+        style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:9px 36px 9px 14px;border-radius:6px;outline:none">
+      <button id="pip-search-clear" onclick="clearPipSearch()" title="Clear"
+        style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <!-- Company list -->
+    <div id="pip-list"></div>
+  </div>
+
+  <!-- FOLLOW-UP -->
+  <div id="panel-followup" class="panel">
+    <div id="fu-stats" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div id="fu-filters"></div>
+      <div style="display:flex;gap:4px;flex-shrink:0">
+        <button class="btn-sm" id="fu-vt-board" onclick="setFuView('board')" style="padding:5px 11px">⊞ Board</button>
+        <button class="btn-sm" id="fu-vt-ae" onclick="setFuView('ae')" style="padding:5px 11px">👤 By AE</button>
+      </div>
+    </div>
+    <div style="margin-bottom:10px" id="fu-ae-filters"></div>
+    <div style="margin-bottom:16px;position:relative">
+      <input id="fu-search" type="text" placeholder="🔍  Search company…" oninput="setFuSearch(this.value)"
+        style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:9px 36px 9px 14px;border-radius:6px;outline:none">
+      <button id="fu-search-clear" onclick="clearFuSearch()" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div id="fu-board" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div><div id="fu-col-hot"></div></div>
+      <div><div id="fu-col-warm"></div></div>
+      <div><div id="fu-col-nurture"></div></div>
+    </div>
+    <div id="fu-ae-view" style="display:none"></div>
+  </div>
+
+</div>
+
+<!-- EDIT OPPORTUNITY MODAL -->
+<div id="edit-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal-box">
+    <div class="modal-title">Edit Opportunity</div>
+
+    <div class="field">
+      <label>Company</label>
+      <input type="text" id="em-company" placeholder="Company name...">
+    </div>
+
+    <div class="field">
+      <label>Owner</label>
+      <select id="em-owner">
+        <optgroup label="Booth Team">
+          <option>Luca</option><option>Adrien</option><option>Lee</option><option>Leonard</option><option>Javed</option>
+        </optgroup>
+        <optgroup label="Meetings Team">
+          <option>Penelope</option><option>Zohra</option><option>Mara</option><option>Greg</option><option>Rawad</option><option>Georg</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Lead Type</label>
+      <div class="lead-selector" id="em-lead-btns">
+        <button class="lead-btn" data-etype="hot" onclick="selectEditLead('hot')"><span class="emoji">🔥</span><span class="name">HOT</span><span class="pct">100%</span></button>
+        <button class="lead-btn" data-etype="warm" onclick="selectEditLead('warm')"><span class="emoji">🟡</span><span class="name">WARM</span><span class="pct">75%</span></button>
+        <button class="lead-btn" data-etype="nurture" onclick="selectEditLead('nurture')"><span class="emoji">🌱</span><span class="name">NURTURE</span><span class="pct">50%</span></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>T-Shirt Size</label>
+      <select id="em-size">
+        <option value="50000">XS — $50k</option>
+        <option value="100000">S — $100k</option>
+        <option value="250000">M — $250k</option>
+        <option value="500000">L — $500k</option>
+        <option value="1000000">XL — $1M</option>
+      </select>
+    </div>
+
+    <div class="score-preview" id="em-preview">
+      <span class="label">SCORED VALUE</span>
+      <span class="value" id="em-preview-val">$250k</span>
+    </div>
+
+    <div class="field" style="margin-top:13px">
+      <label>SDR Source <span style="font-size:8px;color:var(--muted2);letter-spacing:0">(optional)</span></label>
+      <select id="em-sdr">
+        <option value="">— None —</option>
+        <option>Zoran</option><option>Miriyam</option><option>Christina</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Note</label>
+      <input type="text" id="em-note" placeholder="Notes...">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:18px">
+      <button class="btn-primary" style="margin-top:0;flex:1" onclick="saveEdit()">✓ Save Changes</button>
+      <button class="btn-ghost" onclick="closeEditModal()">Cancel</button>
+    </div>
+    <div class="status" id="em-status"></div>
+  </div>
+</div>
+
+<!-- FOLLOW-UP EMAIL MODAL -->
+<div id="fu-email-modal" style="display:none;position:fixed;inset:0;background:#0a1828cc;z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(2px)" onclick="if(event.target===this)closeFuEmail()">
+  <div class="modal-box" style="max-width:600px;max-height:92vh">
+    <button style="position:absolute;top:15px;right:17px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1" onclick="closeFuEmail()">✕</button>
+    <div class="modal-title">✉ Follow-up Email</div>
+    <div id="fu-email-header" style="display:flex;gap:16px;flex-wrap:wrap;background:var(--bg4);padding:10px 14px;margin-bottom:14px"></div>
+    <div id="fu-notes-preview" style="display:none;background:var(--bg4);border:1px solid var(--border);padding:8px 12px;margin-bottom:12px">
+      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">MEETING NOTES</div>
+      <div id="fu-notes-text" style="font-size:11px;color:var(--muted);line-height:1.5;max-height:80px;overflow-y:auto"></div>
+    </div>
+    <div style="display:flex;gap:5px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:10px">
+      <button class="fu-etab block-pill active" onclick="fuSetEmailTab('active')">Active Deal</button>
+      <button class="fu-etab block-pill" onclick="fuSetEmailTab('warm')">Warm Prospect</button>
+      <button class="fu-etab block-pill" onclick="fuSetEmailTab('cold')">Early Stage</button>
+    </div>
+    <div class="field"><label>Subject</label><input type="text" id="fu-e-subject"></div>
+    <div class="field" style="margin-bottom:0"><label>Body — edit before sending</label>
+      <textarea id="fu-e-body" style="min-height:190px;resize:vertical;line-height:1.6;background:var(--bg4);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:9px 12px;width:100%;outline:none"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap">
+      <button onclick="fuMarkSentFromEmail()" style="background:#00e67618;border:1px solid #00e67644;color:var(--green);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;padding:8px 14px;cursor:pointer">✓ Mark Sent</button>
+      <button class="btn-ghost" onclick="closeFuEmail()">Close</button>
+      <button id="fu-copy-btn" onclick="fuCopyEmail()" style="margin-left:auto;background:var(--accent);color:#0f2333;border:none;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;padding:8px 16px;cursor:pointer;font-weight:500">Copy Email</button>
+    </div>
+    <div class="status" id="fu-email-status"></div>
+  </div>
+</div>
+
+<script>
+const BOOTH    = ["Luca","Adrien","Lee","Leonard","Javed"];
+const SDR      = ["Zoran","Miriyam","Christina"];
+const MEETINGS = ["Penelope","Zohra","Mara","Greg","Rawad","Georg"];
+const ALL = [...BOOTH, ...SDR, ...MEETINGS];
+const BOOTH_TARGET = BOOTH.length * 750000;    // 5 × $750k = $3.75M
+const SDR_TARGET   = SDR.length   * 750000;    // 3 × $750k = $2.25M
+const MTG_TARGET   = MEETINGS.length * 1500000; // 6 × $1.5M = $9.0M
+const TOTAL_TARGET = BOOTH_TARGET + SDR_TARGET + MTG_TARGET;
+const BLOCKS = [
+  {id:"day1",label:"Day 1",sub:"Tuesday"},
+  {id:"rooftop",label:"Rooftop",sub:"Tuesday Evening"},
+  {id:"day2",label:"Day 2",sub:"Wednesday"},
+  {id:"day3breakfast",label:"Day 3 Breakfast",sub:"Thursday AM"},
+  {id:"day3",label:"Day 3",sub:"Thursday"},
+];
+const LEAD_TYPES = {hot:{score:1.0,color:"#ff4d4d"},warm:{score:0.75,color:"#f5a623"},nurture:{score:0.5,color:"#4a90e2"}};
+const TSHIRT_LABELS = {50000:"XS",100000:"S",250000:"M",500000:"L",1000000:"XL"};
+
+// ── Supabase ─────────────────────────────────────────────────────────────────
+const SB_URL   = 'https://zrfqdyqzvthkzfcusyso.supabase.co';
+const SB_KEY   = 'sb_publishable_ZoKU8tEBHFKzMNHmbNEk_w_3UNgjzXq';
+const SB_TABLE = 'shoptalk_entries';
+const SB_HDR   = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+
+function newId() {
+  return typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16);
+      });
+}
+
+let pendingOps = [];
+try { pendingOps = JSON.parse(localStorage.getItem('shoptalk_pending') || '[]'); } catch {}
+function savePending() { try { localStorage.setItem('shoptalk_pending', JSON.stringify(pendingOps)); } catch {} }
+
+function setSyncStatus(s) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  if (!dot||!lbl) return;
+  const cfg = {ok:['var(--green)','LIVE'],syncing:['var(--warm)','SYNCING'],offline:['var(--hot)','OFFLINE'],connecting:['var(--accent)','CONNECTING']};
+  const [c,t] = cfg[s]||cfg.ok;
+  dot.style.background = c; lbl.textContent = t; lbl.style.color = c;
+}
+
+async function sbGet() {
+  const res = await fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?select=*&order=logged_at.asc', {headers:SB_HDR});
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+async function sbPost(row) {
+  const res = await fetch(SB_URL+'/rest/v1/'+SB_TABLE, {method:'POST',headers:SB_HDR,body:JSON.stringify(row)});
+  if (!res.ok) throw new Error(res.status);
+}
+async function sbDel(id) {
+  await fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?id=eq.'+id, {method:'DELETE',headers:SB_HDR});
+}
+
+function rowToEntry(r) {
+  return { id:r.id, block:r.block, raw:r.raw, scored:r.scored,
+           leadType:r.lead_type, size:r.size_label,
+           company:r.company||'', sdrSource:r.sdr_source||'', note:r.note||'',
+           ts: new Date(r.logged_at).getTime(),
+           contactName:r.contact_name||'', contactRole:r.contact_role||'',
+           contactEmail:r.contact_email||'', followedUp:r.followed_up||false,
+           sentAt:r.sent_at||null };
+}
+function entryToRow(name, e) {
+  const team = BOOTH.includes(name)?'Booth':SDR.includes(name)?'SDR':'Meetings';
+  return { id:e.id, member:name, team,
+           block:e.block, lead_type:e.leadType, size_label:e.size,
+           raw:e.raw, scored:e.scored, company:e.company||'',
+           sdr_source:e.sdrSource||'', note:e.note||'' };
+}
+
+async function flushPending() {
+  if (!pendingOps.length) return;
+  const batch=[...pendingOps]; pendingOps=[]; savePending();
+  for (const op of batch) {
+    try {
+      if (op.type==='insert') await sbPost(op.row);
+      else if (op.type==='delete') await sbDel(op.id);
+    } catch { pendingOps.push(op); }
+  }
+  savePending();
+}
+
+async function syncFromSupabase() {
+  setSyncStatus('syncing');
+  try {
+    const rows = await sbGet();
+    const fresh = initData();
+    rows.forEach(r => {
+      if (!fresh[r.member]) return;
+      const e = rowToEntry(r);
+      fresh[r.member].entries.push(e);
+      fresh[r.member].scored += r.scored;
+      fresh[r.member].raw    += r.raw;
+      fresh[r.member].eng++;
+    });
+    data = fresh;
+    saveToStorage();
+    renderAll();
+    if (document.getElementById('panel-followup').classList.contains('active')) renderFollowup();
+    setSyncStatus('ok');
+    await flushPending();
+  } catch { setSyncStatus('offline'); }
+}
+
+async function sbInsertAsync(name, entry) {
+  try { await sbPost(entryToRow(name, entry)); }
+  catch { pendingOps.push({type:'insert', row:entryToRow(name,entry)}); savePending(); }
+}
+async function sbDeleteAsync(id) {
+  try { await sbDel(id); }
+  catch { pendingOps.push({type:'delete', id}); savePending(); }
+}
+// ── End Supabase ──────────────────────────────────────────────────────────────
+
+let state = {leadType:"hot"};
+let data = {};
+let activeBlock = "day1";
+
+function initData() {
+  const d = {};
+  ALL.forEach(n => d[n] = {scored:0, raw:0, eng:0, entries:[]});
+  return d;
+}
+
+const STORE_KEY = "shoptalk_data";
+function loadFromStorage() {
+  try {
+    let r = localStorage.getItem(STORE_KEY);
+    if (!r) { // one-time migration from old sessionStorage builds
+      r = sessionStorage.getItem(STORE_KEY);
+      if (r) localStorage.setItem(STORE_KEY, r);
+    }
+    if (r) return JSON.parse(r);
+  } catch {}
+  return initData();
+}
+
+function saveToStorage() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch {}
+}
+
+function fmt(n) {
+  if (n >= 1000000) return "$" + (n/1000000).toFixed(2) + "M";
+  if (n >= 1000) return "$" + Math.round(n/1000) + "k";
+  return "$" + n;
+}
+function pct(v, t) { return Math.min(100, Math.round(v/t*100)); }
+function cap(v, t) { return Math.min(100, v/t*100).toFixed(1) + "%"; }
+
+function selectLead(type) {
+  state.leadType = type;
+  document.querySelectorAll('.lead-btn').forEach(b => {
+    b.className = 'lead-btn' + (b.dataset.type === type ? ' active-'+type : '');
+  });
+  updatePreview();
+}
+
+function updatePreview() {
+  const raw = parseInt(document.getElementById('f-size').value) || 250000;
+  const lt = LEAD_TYPES[state.leadType];
+  const scored = Math.round(raw * lt.score);
+  const el = document.getElementById('preview-val');
+  el.textContent = fmt(scored);
+  el.style.color = lt.color;
+}
+
+function logEntry() {
+  const name = document.getElementById('f-name').value;
+  const block = document.getElementById('f-block').value;
+  const raw = parseInt(document.getElementById('f-size').value);
+  const company = document.getElementById("f-company").value.trim();
+  const sdrSource = document.getElementById("f-sdr").value;
+  const note = document.getElementById("f-note").value.trim();
+  if (!name) { showStatus('Please select a team member', 'err'); return; }
+  const lt = LEAD_TYPES[state.leadType];
+  const scored = Math.round(raw * lt.score);
+  data[name].scored += scored;
+  data[name].raw += raw;
+  data[name].eng++;
+  const entry = {id: newId(), block, raw, scored, leadType: state.leadType, size: TSHIRT_LABELS[raw] || 'M', company, sdrSource, note, ts: Date.now()};
+  data[name].entries.push(entry);
+  saveToStorage();
+  renderAll();
+  sbInsertAsync(name, entry);
+  const sdrNote = sdrSource ? ' · SDR: ' + sdrSource : '';
+  showFlash("⚡ " + name + " — " + fmt(scored) + " scored (" + state.leadType + ")" + sdrNote);
+  showStatus("Logged! " + fmt(scored) + " scored for " + name + sdrNote, 'ok');
+  document.getElementById('f-company').value = '';
+  document.getElementById('f-sdr').value = '';
+  document.getElementById('f-note').value = '';
+  updateRecentCard(name);
+}
+
+function showFlash(msg) {
+  const el = document.getElementById('flash');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(window._ft);
+  window._ft = setTimeout(() => el.style.display='none', 3000);
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('log-status');
+  el.textContent = msg;
+  el.className = 'status status-' + type;
+  el.style.display = 'block';
+  if (type === 'ok') setTimeout(() => el.style.display='none', 3500);
+}
+
+function updateRecentCard(name) {
+  if (!name || !data[name]) { document.getElementById('recent-card').style.display='none'; return; }
+  document.getElementById('recent-card').style.display = 'block';
+  document.getElementById('recent-title').textContent = name.toUpperCase() + ' — RECENT';
+  document.getElementById('recent-scored').textContent = fmt(data[name].scored);
+  const entries = [...data[name].entries].reverse().slice(0,5);
+  document.getElementById('recent-entries').innerHTML = entries.map(e => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px">
+      <div style="display:flex;gap:7px;align-items:center">
+        <span class="lead-tag tag-${e.leadType}">${e.leadType.toUpperCase()}</span>
+        <span style="color:var(--accent)">${e.size}</span>
+        ${e.company ? '<span style="color:var(--text)">'+e.company+'</span>' : ''}${e.note ? '<span style="color:var(--muted2)"> · '+e.note+'</span>' : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="text-align:right">
+          <div>${fmt(e.scored)}</div>
+          <div style="font-size:9px;color:var(--muted)">raw ${fmt(e.raw)}</div>
+        </div>
+        <button class="btn-sm" style="padding:3px 7px" title="Edit" onclick="editEntry('${name}','${e.id||e.ts}')">✎</button>
+        <button class="btn-sm" style="padding:3px 7px" title="Delete" onclick="deleteEntry('${name}','${e.id||e.ts}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+document.getElementById('f-name').addEventListener('change', e => updateRecentCard(e.target.value));
+
+function toggleAdmin() {
+  const p = document.getElementById('admin-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+async function resetAll() {
+  if (!confirm('⚠️ RESET ALL DATA?\n\nThis will permanently delete every entry from Supabase for ALL team members. There is no undo.')) return;
+  if (!confirm('Are you absolutely sure? Type OK in the next prompt to confirm.')) return;
+  const check = prompt('Type RESET to confirm:');
+  if (check !== 'RESET') { alert('Cancelled.'); return; }
+  // Delete all rows from Supabase
+  try {
+    await fetch(SB_URL + '/rest/v1/' + SB_TABLE + '?id=neq.00000000-0000-0000-0000-000000000000', {method:'DELETE', headers:SB_HDR});
+  } catch(e) { console.warn('Supabase delete failed', e); }
+  data = initData();
+  pendingOps = []; savePending();
+  saveToStorage();
+  renderAll();
+  document.getElementById('recent-card').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'none';
+  showFlash('All data reset.');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','pipeline','followup','leaderboard','blocks'][i]===name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if (name === 'pipeline') renderPipeline();
+  if (name === 'followup') renderFollowup();
+}
+
+let pipFilter = 'all';
+let pipSearch = '';
+let pipOwner  = '';
+let _pipList  = []; // ordered list — index used for DOM IDs
+
+function renderPipeline() {
+  const companies = [];
+  ALL.forEach(n => {
+    const team = SDR.includes(n)?'sdr':BOOTH.includes(n)?'booth':'meetings';
+    data[n].entries.forEach(e => {
+      if (!e.company) return;
+      companies.push({id:e.id,company:e.company,owner:n,team,
+        sdrSource:e.sdrSource||'',leadType:e.leadType,raw:e.raw,
+        scored:e.scored,block:e.block,note:e.note||'',needsOwner:SDR.includes(n)});
+    });
+  });
+  companies.sort((a,b)=>b.scored-a.scored);
+
+  const total    = companies.reduce((s,c)=>s+c.scored,0);
+  const totalRaw = companies.reduce((s,c)=>s+c.raw,0);
+  const sdrDeals = companies.filter(c=>c.sdrSource);
+  const noOwner  = companies.filter(c=>c.needsOwner);
+  const ltColors = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji  = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  const BLBL     = {day1:'Day 1',rooftop:'Rooftop',day2:'Day 2',day3breakfast:'Day 3 AM',day3:'Day 3'};
+
+  document.getElementById('pip-kpis').innerHTML = [
+    {label:'Companies',       value:companies.length,          color:'#fff'},
+    {label:'Scored Pipeline', value:fmt(total),                color:'var(--accent)', sub:'raw '+fmt(totalRaw)},
+    {label:'SDR Attributed',  value:sdrDeals.length+' deals',  color:'var(--accent)'},
+    {label:'Needs Owner',     value:noOwner.length+' entries', color:noOwner.length?'var(--hot)':'var(--green)'},
+  ].map(k=>`<div class="card" style="padding:14px 16px">
+    <div style="font-size:8px;letter-spacing:3px;color:var(--muted);margin-bottom:6px">${k.label.toUpperCase()}</div>
+    <div class="big" style="font-size:28px;color:${k.color};line-height:1">${k.value}</div>
+    ${k.sub?`<div style="font-size:9px;color:var(--muted);margin-top:4px">${k.sub}</div>`:''}</div>`).join('');
+
+  document.getElementById('pip-filters').innerHTML = [
+    {id:'all',     label:'All · '+companies.length},
+    {id:'sdr',     label:'SDR Attributed · '+sdrDeals.length},
+    {id:'noowner', label:'⚠ Needs Owner · '+noOwner.length},
+  ].map(f=>`<button class="block-pill ${pipFilter===f.id?'active':''}" onclick="setPipFilter('${f.id}')">${f.label}</button>`).join('');
+
+  // AE pills — counts based on pre-search list
+  const AES = [...BOOTH, ...MEETINGS];
+  const baseList = pipFilter==='sdr' ? sdrDeals : pipFilter==='noowner' ? noOwner : companies;
+  document.getElementById('pip-ae-filters').innerHTML =
+    `<span style="font-size:9px;letter-spacing:2px;color:var(--muted);margin-right:8px;vertical-align:middle">AE</span>` +
+    AES.map(ae => {
+      const cnt = baseList.filter(c => c.owner === ae).length;
+      if (!cnt) return '';
+      const active = pipOwner === ae;
+      return `<button class="block-pill${active?' active':''}" onclick="setPipOwner('${ae}')" style="margin-bottom:4px">${ae} · ${cnt}</button>`;
+    }).join('');
+
+  let list = companies;
+  if (pipFilter==='sdr')     list = sdrDeals;
+  if (pipFilter==='noowner') list = noOwner;
+  if (pipOwner)  list = list.filter(c => c.owner === pipOwner);
+  if (pipSearch) list = list.filter(c => c.company.toLowerCase().includes(pipSearch.toLowerCase()));
+  _pipList = list; // store for index lookup
+
+  // keep search input in sync with state
+  const _si = document.getElementById('pip-search');
+  const _sc = document.getElementById('pip-search-clear');
+  if (_si && _si !== document.activeElement) _si.value = pipSearch;
+  if (_sc) _sc.style.display = pipSearch ? 'block' : 'none';
+
+  if (!list.length) { document.getElementById('pip-list').innerHTML='<div class="empty">NO ENTRIES MATCH THIS FILTER</div>'; return; }
+
+  const ownerGroups =
+    `<optgroup label="Booth Team">${BOOTH.map(m=>`<option>${m}</option>`).join('')}</optgroup>` +
+    `<optgroup label="Meetings Team">${MEETINGS.map(m=>`<option>${m}</option>`).join('')}</optgroup>`;
+  const sdrOpts = `<option value="">— None —</option>${SDR.map(s=>`<option>${s}</option>`).join('')}`;
+  const sizeOpts = Object.entries(TSHIRT_LABELS).map(([v,l])=>`<option value="${v}">${l} — ${fmt(parseInt(v))}</option>`).join('');
+
+  document.getElementById('pip-list').innerHTML = list.map((c,i) => {
+    const rowClass   = c.needsOwner?'pip-row flag-owner':c.sdrSource?'pip-row flag-sdr':'pip-row';
+    const teamBadge  = `<span class="badge badge-${c.team}">${c.team.toUpperCase()}</span>`;
+    const ltBadge    = `<span class="badge badge-${c.leadType}">${ltEmoji[c.leadType]} ${c.leadType.toUpperCase()}</span>`;
+    const sdrBadge   = c.sdrSource?`<span class="badge badge-sdr-src">SDR: ${c.sdrSource}</span>`:'';
+    const ownerBadge = c.needsOwner?`<span class="badge badge-noowner">⚠ NEEDS OWNER</span>`:'';
+    return `
+    <div>
+      <div class="${rowClass}" style="grid-template-columns:2fr 1.2fr 1fr auto auto">
+        <div>
+          <div class="pip-co">${c.company}</div>
+          ${c.note?`<div class="pip-note">${c.note}</div>`:''}
+          <div class="pip-badges" style="margin-top:5px">${teamBadge}${ltBadge}${sdrBadge}${ownerBadge}</div>
+        </div>
+        <div><div class="pip-owner">${c.owner}</div><div style="font-size:9px;color:var(--muted2);margin-top:2px">${BLBL[c.block]||c.block}</div></div>
+        <div></div>
+        <div class="pip-val">
+          <div class="scored" style="color:${ltColors[c.leadType]}">${fmt(c.scored)}</div>
+          <div class="raw">raw ${fmt(c.raw)}</div>
+        </div>
+        <button class="btn-sm" style="white-space:nowrap;align-self:center" onclick="togglePipEdit(${i});event.stopPropagation()">✎ Edit</button>
+      </div>
+      <div id="pep${i}" style="display:none;background:var(--bg4);border:1px solid var(--accent)33;border-top:none;padding:18px 20px;margin-bottom:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0"><label>Company</label><input type="text" id="pf-co${i}" placeholder="Company..."></div>
+          <div class="field" style="margin-bottom:0"><label>Owner</label><select id="pf-own${i}">${ownerGroups}</select></div>
+        </div>
+        <div class="field" style="margin-bottom:12px"><label>Lead Type</label>
+          <div class="lead-selector" id="pf-lt${i}" data-lead="${c.leadType}">
+            ${['hot','warm','nurture'].map(lt=>`<button class="lead-btn ${lt===c.leadType?'active-'+lt:''}" data-lt="${lt}" onclick="pILT(${i},'${lt}');event.stopPropagation()"><span class="emoji">${ltEmoji[lt]}</span><span class="name">${lt.toUpperCase()}</span><span class="pct">${{hot:'100%',warm:'75%',nurture:'50%'}[lt]}</span></button>`).join('')}
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="field" style="margin-bottom:0"><label>Size</label><select id="pf-sz${i}" onchange="pILS(${i})">${sizeOpts}</select></div>
+          <div class="field" style="margin-bottom:0"><label>SDR Source</label><select id="pf-sdr${i}">${sdrOpts}</select></div>
+          <div><label style="display:block;font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:5px;text-transform:uppercase">Scored</label>
+            <div style="background:var(--bg3);border:1px solid var(--border);padding:9px 12px;text-align:center;font-family:'Bebas Neue';font-size:20px" id="pf-sc${i}">${fmt(c.scored)}</div>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:14px"><label>Note</label><input type="text" id="pf-nt${i}" placeholder="Notes..."></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-primary" style="margin-top:0;max-width:140px" onclick="pSave(${i})">✓ Save</button>
+          <button class="btn-ghost" onclick="pClose(${i})">Cancel</button>
+          <div class="status" id="pf-st${i}" style="display:none;margin:0;flex:1"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setPipFilter(f) { pipFilter = f; renderPipeline(); }
+function setPipOwner(ae) { pipOwner = (pipOwner === ae) ? '' : ae; renderPipeline(); }
+function setPipSearch(v) {
+  pipSearch = v;
+  const clr = document.getElementById('pip-search-clear');
+  if (clr) clr.style.display = v ? 'block' : 'none';
+  renderPipeline();
+  // keep cursor in input after re-render
+  const inp = document.getElementById('pip-search');
+  if (inp) { inp.value = v; inp.focus(); inp.setSelectionRange(v.length, v.length); }
+}
+function clearPipSearch() {
+  pipSearch = '';
+  const inp = document.getElementById('pip-search');
+  if (inp) { inp.value = ''; inp.focus(); }
+  const clr = document.getElementById('pip-search-clear');
+  if (clr) clr.style.display = 'none';
+  renderPipeline();
+}
+
+function togglePipEdit(i) {
+  const panel = document.getElementById('pep'+i);
+  if (!panel) return;
+  const opening = panel.style.display==='none';
+  document.querySelectorAll('[id^="pep"]').forEach(el=>el.style.display='none');
+  if (!opening) return;
+  const c = _pipList[i];
+  if (!c) return;
+  // Populate fields
+  document.getElementById('pf-co'+i).value  = c.company;
+  document.getElementById('pf-own'+i).value = c.owner;
+  document.getElementById('pf-sz'+i).value  = String(c.raw);
+  document.getElementById('pf-sdr'+i).value = c.sdrSource||'';
+  document.getElementById('pf-nt'+i).value  = c.note||'';
+  const ltEl = document.getElementById('pf-lt'+i);
+  ltEl.dataset.lead = c.leadType;
+  ltEl.querySelectorAll('.lead-btn').forEach(b=>b.className='lead-btn'+(b.dataset.lt===c.leadType?' active-'+c.leadType:''));
+  document.getElementById('pf-sc'+i).textContent = fmt(c.scored);
+  document.getElementById('pf-st'+i).style.display='none';
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function pClose(i) { const p=document.getElementById('pep'+i); if(p) p.style.display='none'; }
+
+function pILT(i, lt) {
+  const ltEl = document.getElementById('pf-lt'+i);
+  if (!ltEl) return;
+  ltEl.dataset.lead = lt;
+  ltEl.querySelectorAll('.lead-btn').forEach(b=>b.className='lead-btn'+(b.dataset.lt===lt?' active-'+lt:''));
+  pILS(i);
+}
+
+function pILS(i) {
+  const lt  = document.getElementById('pf-lt'+i)?.dataset.lead||'warm';
+  const raw = parseInt(document.getElementById('pf-sz'+i)?.value)||250000;
+  const el  = document.getElementById('pf-sc'+i);
+  if(el) el.textContent = fmt(Math.round(raw*LEAD_TYPES[lt].score));
+}
+
+async function pSave(i) {
+  const c = _pipList[i];
+  if (!c) return;
+  const company   = document.getElementById('pf-co'+i).value.trim();
+  const newOwner  = document.getElementById('pf-own'+i).value;
+  const raw       = parseInt(document.getElementById('pf-sz'+i).value);
+  const sdrSource = document.getElementById('pf-sdr'+i).value;
+  const note      = document.getElementById('pf-nt'+i).value.trim();
+  const leadType  = document.getElementById('pf-lt'+i).dataset.lead;
+  const scored    = Math.round(raw*LEAD_TYPES[leadType].score);
+  const size      = TSHIRT_LABELS[raw]||'M';
+  const stEl      = document.getElementById('pf-st'+i);
+  stEl.className='status status-load'; stEl.textContent='Saving…'; stEl.style.display='block';
+
+  const oldOwner = c.owner;
+  const entry    = data[oldOwner]?.entries.find(e=>e.id===c.id);
+  if (!entry) { stEl.className='status status-err'; stEl.textContent='Entry not found.'; return; }
+  const updated  = {...entry, company, raw, scored, leadType, size, sdrSource, note};
+  if (newOwner!==oldOwner) {
+    const idx=data[oldOwner].entries.indexOf(entry);
+    data[oldOwner].scored-=entry.scored; data[oldOwner].raw-=entry.raw; data[oldOwner].eng--;
+    data[oldOwner].entries.splice(idx,1);
+    data[newOwner].scored+=scored; data[newOwner].raw+=raw; data[newOwner].eng++;
+    data[newOwner].entries.push(updated);
+  } else {
+    const idx=data[oldOwner].entries.findIndex(e=>e.id===c.id);
+    data[oldOwner].scored+=scored-entry.scored;
+    data[oldOwner].raw+=raw-entry.raw;
+    data[oldOwner].entries[idx]=updated;
+  }
+  saveToStorage();
+  const team=BOOTH.includes(newOwner)?'Booth':SDR.includes(newOwner)?'SDR':'Meetings';
+  await sbPatch(c.id,{company,member:newOwner,team,lead_type:leadType,size_label:size,raw,scored,sdr_source:sdrSource,note});
+  stEl.className='status status-ok'; stEl.textContent='✓ Saved!';
+  setTimeout(()=>{ renderAll(); renderPipeline(); showFlash('✓ '+(company||'Opportunity')+' updated'); },500);
+}
+
+function renderAll() {
+  const boothS = BOOTH.reduce((s,n)=>s+data[n].scored,0);
+  const sdrS   = SDR.reduce((s,n)=>s+data[n].scored,0);
+  const mtgS   = MEETINGS.reduce((s,n)=>s+data[n].scored,0);
+  const totalS = boothS + sdrS + mtgS;
+  const totalR = ALL.reduce((s,n)=>s+data[n].raw,0);
+  const totalE = ALL.reduce((s,n)=>s+data[n].eng,0);
+
+  // Header
+  const hScored = document.getElementById('h-scored');
+  hScored.textContent = fmt(totalS);
+  hScored.style.color = totalS >= TOTAL_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('h-raw').textContent = 'raw ' + fmt(totalR);
+  document.getElementById('h-pct').textContent = pct(totalS, TOTAL_TARGET) + '%';
+  document.getElementById('h-pct').style.color = totalS >= TOTAL_TARGET ? 'var(--green)' : 'var(--accent)';
+
+  // Targets (derived — keeps labels in sync with team sizes)
+  document.getElementById('h-target').textContent = fmt(TOTAL_TARGET);
+  document.getElementById('booth-target').textContent = fmt(BOOTH_TARGET);
+  document.getElementById('mtg-target').textContent = fmt(MTG_TARGET);
+  document.getElementById('sdr-target-label').textContent = fmt(SDR_TARGET);
+  document.getElementById('total-target').textContent = '/ ' + fmt(TOTAL_TARGET);
+
+  // Lead type cards
+  const leadBreakdown = ['hot','warm','nurture'].map(id => {
+    let cnt=0, raw=0, scored=0;
+    ALL.forEach(n => data[n].entries.forEach(e => { if(e.leadType===id){cnt++;raw+=e.raw;scored+=e.scored;} }));
+    return {id,cnt,raw,scored};
+  });
+  const ltColors = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  const ltPct = {hot:'100%',warm:'75%',nurture:'50%'};
+  document.getElementById('lead-cards').innerHTML = leadBreakdown.map(lt => `
+    <div class="card" style="border-color:${ltColors[lt.id]}44">
+      <div style="font-size:8px;letter-spacing:2px;color:${ltColors[lt.id]};margin-bottom:8px">${ltEmoji[lt.id]} ${lt.id.toUpperCase()} LEADS · ${ltPct[lt.id]}</div>
+      <div class="big" style="font-size:30px;color:#fff">${lt.cnt}</div>
+      <div style="margin-top:8px">
+        <div style="font-size:12px;color:#fff">${fmt(lt.scored)} <span style="font-size:9px;color:var(--muted)">scored</span></div>
+        <div style="font-size:10px;color:var(--muted)">${fmt(lt.raw)} raw</div>
+      </div>
+    </div>`).join('');
+
+  // Team cards
+  const boothMax = Math.max(1, ...BOOTH.map(n=>data[n].scored));
+  const mtgMax = Math.max(1, ...MEETINGS.map(n=>data[n].scored));
+  document.getElementById('booth-scored').textContent = fmt(boothS);
+  document.getElementById('booth-scored').style.color = boothS >= BOOTH_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('booth-bar').style.width = pct(boothS,BOOTH_TARGET)+'%';
+  document.getElementById('booth-bar').style.background = boothS >= BOOTH_TARGET ? 'var(--green)' : 'var(--orange)';
+  document.getElementById('booth-pct').textContent = pct(boothS,BOOTH_TARGET)+'%';
+  document.getElementById('booth-rem').textContent = fmt(Math.max(0,BOOTH_TARGET-boothS))+' to go';
+  document.getElementById('booth-members').innerHTML = BOOTH.map(n => `
+    <div class="mbar">
+      <span class="mbar-name">${n}</span>
+      <div class="bar-track" style="flex:1;height:5px"><div class="bar-fill" style="width:${pct(data[n].scored,boothMax)}%;background:var(--orange)"></div></div>
+      <span class="mbar-val">${fmt(data[n].scored)}</span>
+    </div>`).join('');
+
+  document.getElementById('mtg-scored').textContent = fmt(mtgS);
+  document.getElementById('mtg-scored').style.color = mtgS >= MTG_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('mtg-bar').style.width = pct(mtgS,MTG_TARGET)+'%';
+  document.getElementById('mtg-bar').style.background = mtgS >= MTG_TARGET ? 'var(--green)' : 'var(--purple)';
+  document.getElementById('mtg-pct').textContent = pct(mtgS,MTG_TARGET)+'%';
+  document.getElementById('mtg-rem').textContent = fmt(Math.max(0,MTG_TARGET-mtgS))+' to go';
+  document.getElementById('mtg-members').innerHTML = MEETINGS.map(n => `
+    <div class="mbar">
+      <span class="mbar-name">${n}</span>
+      <div class="bar-track" style="flex:1;height:5px"><div class="bar-fill" style="width:${pct(data[n].scored,mtgMax)}%;background:var(--purple)"></div></div>
+      <span class="mbar-val">${fmt(data[n].scored)}</span>
+    </div>`).join('');
+
+  // SDR card
+  const sdrMax = Math.max(1, ...SDR.map(n=>data[n].scored));
+  // Meetings attributed to each SDR by other reps (via sdrSource field)
+  const sdrAttr = {};
+  SDR.forEach(n => sdrAttr[n] = {scored:0, eng:0});
+  ALL.forEach(n => data[n].entries.forEach(e => {
+    if (e.sdrSource && sdrAttr[e.sdrSource]) {
+      sdrAttr[e.sdrSource].scored += e.scored;
+      sdrAttr[e.sdrSource].eng++;
+    }
+  }));
+  const totalSdrAttr = SDR.reduce((s,n)=>s+sdrAttr[n].scored,0);
+  const totalSdrSourced = SDR.reduce((s,n)=>s+sdrAttr[n].eng,0);
+  document.getElementById('sdr-scored').textContent = fmt(sdrS);
+  document.getElementById('sdr-scored').style.color = sdrS >= SDR_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('sdr-bar').style.width = pct(sdrS,SDR_TARGET)+'%';
+  document.getElementById('sdr-bar').style.background = sdrS >= SDR_TARGET ? 'var(--green)' : 'var(--accent)';
+  document.getElementById('sdr-pct').textContent = pct(sdrS,SDR_TARGET)+'%';
+  document.getElementById('sdr-rem').textContent = fmt(Math.max(0,SDR_TARGET-sdrS))+' to go';
+  document.getElementById('sdr-attributed').textContent = fmt(totalSdrAttr);
+  document.getElementById('sdr-sourced-count').textContent = totalSdrSourced;
+  document.getElementById('sdr-members').innerHTML = SDR.map(n => `
+    <div class="mbar" style="margin-bottom:10px">
+      <span class="mbar-name" style="width:80px">${n}</span>
+      <div style="flex:1">
+        <div class="bar-track" style="height:5px;margin-bottom:3px"><div class="bar-fill" style="width:${pct(data[n].scored,sdrMax)}%;background:var(--accent)"></div></div>
+        <div style="display:flex;gap:10px;font-size:9px;color:var(--muted)">
+          <span>own: ${fmt(data[n].scored)}</span>
+          ${sdrAttr[n].eng ? '<span style="color:var(--accent)">attributed: '+fmt(sdrAttr[n].scored)+' ('+sdrAttr[n].eng+' mtg)</span>' : ''}
+        </div>
+      </div>
+      <span class="mbar-val">${fmt(data[n].scored)}</span>
+    </div>`).join('');
+
+  // Total
+  document.getElementById('total-scored').textContent = fmt(totalS);
+  document.getElementById('total-scored').style.color = totalS >= TOTAL_TARGET ? 'var(--green)' : '#fff';
+  document.getElementById('total-raw-label').textContent = 'scored · raw ' + fmt(totalR);
+  document.getElementById('total-bar').style.width = pct(totalS,TOTAL_TARGET)+'%';
+  document.getElementById('total-bar').style.background = totalS >= TOTAL_TARGET ? 'var(--green)' : 'var(--accent)';
+  document.getElementById('total-pct').textContent = pct(totalS,TOTAL_TARGET)+'% achieved';
+  document.getElementById('total-rem').textContent = fmt(Math.max(0,TOTAL_TARGET-totalS))+' to go';
+  document.getElementById('total-eng').textContent = totalE;
+  document.getElementById('avg-eng').textContent = 'avg ' + (totalE ? fmt(Math.round(totalS/totalE)) : '$0') + ' / engagement';
+
+  // Sorted leaders
+  const byPip = ALL.map(n=>({n,scored:data[n].scored,raw:data[n].raw,eng:data[n].eng,team:BOOTH.includes(n)?'booth':'mtg'})).sort((a,b)=>b.scored-a.scored);
+  const byEng = [...byPip].sort((a,b)=>b.eng-a.eng);
+  const medals = ['var(--gold)','var(--silver)','var(--bronze)'];
+  const medalEmoji = ['🥇','🥈','🥉'];
+
+  const pipRows = (arr, n=14) => arr.slice(0,n).map((m,i) => `
+    <div class="lb-row">
+      <div class="lb-rank" style="color:${i<3?medals[i]:'var(--border2)'};">${i<3?medalEmoji[i]:i+1}</div>
+      <div class="lb-name">${m.n} <span class="team-tag team-${m.team}">${m.team}</span></div>
+      <div class="lb-val">
+        <div class="main" style="color:${m.scored>0?'#fff':'var(--border2)'}">${fmt(m.scored)}</div>
+        <div class="sub">${fmt(m.raw)} raw</div>
+      </div>
+    </div>`).join('') || '<div class="empty">NO DATA YET</div>';
+
+  const engRows = (arr, n=14) => arr.slice(0,n).map((m,i) => `
+    <div class="lb-row">
+      <div class="lb-rank" style="color:${i<3?medals[i]:'var(--border2)'};">${i<3?medalEmoji[i]:i+1}</div>
+      <div class="lb-name">${m.n} <span class="team-tag team-${m.team}">${m.team}</span></div>
+      <div class="lb-val">
+        <div class="main" style="color:${m.eng>0?'var(--green)':'var(--border2)'}">${m.eng}</div>
+        <div class="sub">engagements</div>
+      </div>
+    </div>`).join('') || '<div class="empty">NO DATA YET</div>';
+
+  document.getElementById('lb-pipeline').innerHTML = pipRows(byPip);
+  document.getElementById('lb-engagement').innerHTML = engRows(byEng);
+
+  // Mini leaderboards
+  document.getElementById('mini-pip').innerHTML = pipRows(byPip, 3);
+  document.getElementById('mini-eng').innerHTML = engRows(byEng, 3);
+
+  // Top 5 deals by company (highest scored value, must have a company name)
+  const allEntries = ALL.flatMap(n => data[n].entries.filter(e => e.company).map(e => ({...e, name: n, team: BOOTH.includes(n) ? 'booth' : 'mtg'})));
+  // Group by company, sum scored value
+  const byCompany = {};
+  allEntries.forEach(e => {
+    const key = e.company.trim();
+    if (!byCompany[key]) byCompany[key] = {company: key, scored: 0, raw: 0, leadType: e.leadType, name: e.name, team: e.team};
+    byCompany[key].scored += e.scored;
+    byCompany[key].raw += e.raw;
+    // Upgrade lead type: hot > warm > nurture
+    const rank = {hot:3, warm:2, nurture:1};
+    if (rank[e.leadType] > rank[byCompany[key].leadType]) byCompany[key].leadType = e.leadType;
+  });
+  const topDeals = Object.values(byCompany).sort((a,b) => b.scored - a.scored).slice(0, 5);
+  const medals2 = ['var(--gold)','var(--silver)','var(--bronze)'];
+  const medalEmoji2 = ['🥇','🥈','🥉'];
+  const maxDeal = topDeals[0]?.scored || 1;
+  document.getElementById('top-deals').innerHTML = topDeals.length ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:12px">    ${topDeals.map((d,i) => `
+      <div style="background:var(--bg4);border:1px solid ${ltColors[d.leadType]}44;padding:14px 16px;position:relative">
+        <div style="font-size:18px;font-family:'Bebas Neue';color:${i<3?medals2[i]:'var(--muted)'};margin-bottom:6px">${i<3?medalEmoji2[i]:i+1}</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.company}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${d.name} · <span class="team-tag team-${d.team}">${d.team}</span></div>
+        <div style="font-size:20px;font-family:'Bebas Neue';color:var(--text);line-height:1">${fmt(d.scored)}</div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:8px">scored</div>
+        <div style="margin-bottom:6px"><span class="lead-tag tag-${d.leadType}">${ltEmoji[d.leadType]} ${d.leadType.toUpperCase()}</span></div>
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct(d.scored,maxDeal)}%;background:${ltColors[d.leadType]};border-radius:2px"></div></div>
+      </div>`).join('')}
+    </div>` : '<div class="empty">No companies logged yet — add a company name when logging entries</div>';
+
+  // Blocks
+  renderBlocks();
+}
+
+function renderBlocks() {
+  document.getElementById('block-pills').innerHTML = BLOCKS.map(b => `
+    <button class="block-pill ${b.id===activeBlock?'active':''}" onclick="setBlock('${b.id}')">${b.label}</button>`).join('');
+
+  const entries = ALL.flatMap(n => data[n].entries.filter(e=>e.block===activeBlock).map(e=>({...e,name:n,team:BOOTH.includes(n)?'booth':'mtg'})));
+  if (!entries.length) { document.getElementById('block-content').innerHTML='<div class="empty">NO ENTRIES FOR THIS BLOCK YET</div>'; return; }
+
+  const blockScored = entries.reduce((s,e)=>s+e.scored,0);
+  const blockRaw = entries.reduce((s,e)=>s+e.raw,0);
+  const block = BLOCKS.find(b=>b.id===activeBlock);
+
+  // Group by member
+  const byMember = {};
+  entries.forEach(e => {
+    if (!byMember[e.name]) byMember[e.name] = {scored:0,raw:0,entries:[],team:e.team};
+    byMember[e.name].scored += e.scored;
+    byMember[e.name].raw += e.raw;
+    byMember[e.name].entries.push(e);
+  });
+  const sorted = Object.entries(byMember).sort((a,b)=>b[1].scored-a[1].scored);
+
+  document.getElementById('block-content').innerHTML = `
+    <div class="card" style="border-color:#00e5ff33;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div class="big" style="font-size:30px;color:var(--accent)">${block.label}</div>
+          <div style="font-size:8px;color:var(--muted);letter-spacing:3px">${block.sub.toUpperCase()}</div>
+        </div>
+        <div style="display:flex;gap:28px;text-align:right">
+          <div>
+            <div style="font-size:8px;color:var(--muted);letter-spacing:2px">SCORED</div>
+            <div class="big" style="font-size:22px">${fmt(blockScored)}</div>
+            <div style="font-size:9px;color:var(--muted)">raw ${fmt(blockRaw)}</div>
+          </div>
+          <div>
+            <div style="font-size:8px;color:var(--muted);letter-spacing:2px">ENGAGEMENTS</div>
+            <div class="big" style="font-size:22px;color:var(--green)">${entries.length}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${sorted.map(([name,m]) => `
+      <div class="card" style="border-color:${m.team==='booth'?'#ff6b3533':'#a855f733'};margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div>
+            <span style="font-size:14px">${name}</span>
+            <span class="team-tag team-${m.team}" style="margin-left:8px">${m.team}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px">${fmt(m.scored)} <span style="font-size:9px;color:var(--muted)">scored</span></div>
+            <div style="font-size:9px;color:var(--muted)">${fmt(m.raw)} raw · ${m.entries.length} eng</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap">
+          ${m.entries.map(e=>`
+            <div class="entry-chip" style="border:1px solid ${LEAD_TYPES[e.leadType].color}44">
+              <span class="lead-tag tag-${e.leadType}">${e.leadType}</span>
+              <span style="color:var(--accent)">${e.size}</span>
+              <span style="color:var(--muted)">→ ${fmt(e.scored)}</span>
+              ${e.company?'<span style="color:var(--text)">'+e.company+'</span>':''}${e.note?'<span style="color:var(--muted2)"> · '+e.note+'</span>':''}
+              <span style="color:var(--muted2);cursor:pointer;margin-left:2px" title="Delete" onclick="deleteEntry('${name}','${e.id||e.ts}')">✕</span>
+            </div>`).join('')}
+        </div>
+      </div>`).join('')}`;
+}
+
+function setBlock(id) { activeBlock = id; renderBlocks(); }
+
+/* ── Supabase PATCH helper ─────────────────────────────────────── */
+async function sbPatch(entryId, body) {
+  try {
+    const res = await fetch(SB_URL+'/rest/v1/'+SB_TABLE+'?id=eq.'+entryId, {
+      method:'PATCH',
+      headers:{...SB_HDR,'Prefer':'return=minimal'},
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(res.status);
+  } catch(e) {
+    pendingOps.push({type:'patch', id:entryId, body}); savePending();
+  }
+}
+
+/* ── Edit Opportunity Modal (kept for potential future use) ─────── */
+let _editCtx = null;
+let _editLead = 'hot';
+
+function openEditModal(entryId, member) {
+  const entry = (data[member]?.entries || []).find(e => e.id === entryId);
+  if (!entry) return;
+  _editCtx  = { entryId, member, entry };
+  _editLead = entry.leadType;
+
+  document.getElementById('em-company').value = entry.company || '';
+  document.getElementById('em-owner').value   = member;
+  document.getElementById('em-size').value     = String(entry.raw);
+  document.getElementById('em-sdr').value      = entry.sdrSource || '';
+  document.getElementById('em-note').value     = entry.note || '';
+  selectEditLead(entry.leadType);
+  updateEditPreview();
+
+  document.getElementById('em-status').style.display = 'none';
+  document.getElementById('edit-overlay').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-overlay').style.display = 'none';
+  _editCtx = null;
+}
+
+function selectEditLead(type) {
+  _editLead = type;
+  document.querySelectorAll('#em-lead-btns .lead-btn').forEach(b => {
+    b.className = 'lead-btn' + (b.dataset.etype === type ? ' active-'+type : '');
+  });
+  updateEditPreview();
+}
+
+function updateEditPreview() {
+  const raw    = parseInt(document.getElementById('em-size').value) || 250000;
+  const scored = Math.round(raw * LEAD_TYPES[_editLead].score);
+  const el     = document.getElementById('em-preview-val');
+  el.textContent = fmt(scored);
+  el.style.color = LEAD_TYPES[_editLead].color;
+}
+document.getElementById('em-size').addEventListener('change', updateEditPreview);
+
+async function saveEdit() {
+  if (!_editCtx) return;
+  const { entryId, member: oldMember, entry } = _editCtx;
+
+  const company   = document.getElementById('em-company').value.trim();
+  const newMember = document.getElementById('em-owner').value;
+  const raw       = parseInt(document.getElementById('em-size').value);
+  const sdrSource = document.getElementById('em-sdr').value;
+  const note      = document.getElementById('em-note').value.trim();
+  const leadType  = _editLead;
+  const scored    = Math.round(raw * LEAD_TYPES[leadType].score);
+  const size      = TSHIRT_LABELS[raw] || 'M';
+
+  const statusEl = document.getElementById('em-status');
+  statusEl.className = 'status status-load';
+  statusEl.textContent = 'Saving…'; statusEl.style.display = 'block';
+
+  // ── Update local data ──────────────────────────────────────────
+  const idx = data[oldMember].entries.findIndex(e => e.id === entryId);
+  if (idx < 0) { statusEl.className='status status-err'; statusEl.textContent='Entry not found.'; return; }
+
+  const updated = {...entry, company, raw, scored, leadType, size, sdrSource, note};
+
+  if (newMember !== oldMember) {
+    // Move entry between members
+    data[oldMember].scored -= entry.scored; data[oldMember].raw -= entry.raw; data[oldMember].eng--;
+    data[oldMember].entries.splice(idx, 1);
+    data[newMember].scored += scored;       data[newMember].raw += raw;       data[newMember].eng++;
+    data[newMember].entries.push(updated);
+  } else {
+    data[oldMember].scored += scored - entry.scored;
+    data[oldMember].raw    += raw    - entry.raw;
+    data[oldMember].entries[idx] = updated;
+  }
+  saveToStorage();
+
+  // ── PATCH Supabase ─────────────────────────────────────────────
+  const team = BOOTH.includes(newMember)?'Booth':SDR.includes(newMember)?'SDR':'Meetings';
+  await sbPatch(entryId, { company, member: newMember, team, lead_type: leadType, size_label: size, raw, scored, sdr_source: sdrSource, note });
+
+  renderAll();
+  if (document.getElementById('panel-pipeline').classList.contains('active')) renderPipeline();
+
+  statusEl.className = 'status status-ok';
+  statusEl.textContent = '✓ Saved!';
+  setTimeout(() => closeEditModal(), 700);
+  showFlash('✓ ' + (company||'Opportunity') + ' updated');
+}
+
+/* ---------- Edit / Delete individual entries ---------- */
+function findEntry(name, id) {
+  if (!data[name]) return -1;
+  return data[name].entries.findIndex(e => String(e.id || e.ts) === String(id));
+}
+
+function deleteEntry(name, id, silent) {
+  const idx = findEntry(name, id);
+  if (idx === -1) return;
+  if (!silent && !confirm('Delete this entry?')) return;
+  const e = data[name].entries[idx];
+  data[name].scored -= e.scored;
+  data[name].raw -= e.raw;
+  data[name].eng = Math.max(0, data[name].eng - 1);
+  data[name].entries.splice(idx, 1);
+  saveToStorage();
+  renderAll();
+  sbDeleteAsync(String(e.id));
+  updateRecentCard(name);
+}
+
+function editEntry(name, id) {
+  const idx = findEntry(name, id);
+  if (idx === -1) return;
+  const e = data[name].entries[idx];
+  document.getElementById('f-name').value = name;
+  document.getElementById('f-block').value = e.block;
+  document.getElementById('f-size').value = String(e.raw);
+  document.getElementById('f-company').value = e.company || '';
+  document.getElementById('f-note').value = e.note || '';
+  selectLead(e.leadType);
+  deleteEntry(name, id, true);   // remove original; re-logged on save
+  showTab('log');
+  window.scrollTo(0, 0);
+  showStatus('Editing entry — adjust the fields and click "Log Entry" to save', 'load');
+}
+
+/* ---------- CSV backup / restore ---------- */
+const CSV_COLS = ['Timestamp','Member','Team','Block','Lead Type','Size','Raw Value','Scored Value','Company','Note'];
+const BLOCK_LABEL = Object.fromEntries(BLOCKS.map(b => [b.id, b.label]));
+const LABEL_BLOCK = Object.fromEntries(BLOCKS.map(b => [b.label.toLowerCase(), b.id]));
+
+function entryRows() {
+  const rows = [];
+  ALL.forEach(n => {
+    const team = BOOTH.includes(n) ? 'Booth' : 'Meetings';
+    data[n].entries.forEach(e => {
+      rows.push([
+        new Date(e.ts || Date.now()).toISOString(),
+        n, team,
+        BLOCK_LABEL[e.block] || e.block,
+        e.leadType, e.size,
+        e.raw, e.scored,
+        e.company || '', e.note || ''
+      ]);
+    });
+  });
+  return rows;
+}
+
+function csvEscape(v) {
+  v = String(v == null ? '' : v);
+  return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function stamp() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+}
+
+function exportCsv() {
+  const rows = [CSV_COLS, ...entryRows()];
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+  download(new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'}), 'shoptalk-pipeline-' + stamp() + '.csv');
+  showFlash('⬇ CSV backup downloaded');
+}
+
+function parseCsv(text) {
+  text = text.replace(/^﻿/, '');
+  const rows = []; let row = [], field = '', i = 0, inQ = false;
+  while (i < text.length) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else field += c;
+    }
+    i++;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
+}
+
+function importCsv(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const rows = parseCsv(reader.result);
+      if (!rows.length) throw new Error('empty file');
+      const header = rows[0].map(h => h.trim().toLowerCase());
+      const col = name => header.indexOf(name.toLowerCase());
+      const iMember = col('Member'), iBlock = col('Block'), iLead = col('Lead Type'),
+            iRaw = col('Raw Value'), iCompany = col('Company'), iNote = col('Note'), iTs = col('Timestamp');
+      if (iMember < 0 || iRaw < 0 || iLead < 0) throw new Error('missing required columns (Member, Lead Type, Raw Value)');
+      if (!confirm('Restore from CSV? This REPLACES all current data with the file contents.')) { ev.target.value = ''; return; }
+      const fresh = initData();
+      let n = 0, skipped = 0;
+      for (let r = 1; r < rows.length; r++) {
+        const cells = rows[r];
+        const member = (cells[iMember] || '').trim();
+        if (!ALL.includes(member)) { skipped++; continue; }
+        const lt = (cells[iLead] || 'hot').trim().toLowerCase();
+        const lead = LEAD_TYPES[lt] ? lt : 'hot';
+        const raw = parseInt(String(cells[iRaw]).replace(/[^0-9.]/g, '')) || 0;
+        if (!raw) { skipped++; continue; }
+        const scored = Math.round(raw * LEAD_TYPES[lead].score);
+        const blockRaw = iBlock >= 0 ? (cells[iBlock] || '').trim() : '';
+        const block = BLOCK_LABEL[blockRaw] ? blockRaw : (LABEL_BLOCK[blockRaw.toLowerCase()] || 'day1');
+        const ts = iTs >= 0 && cells[iTs] ? (Date.parse(cells[iTs]) || Date.now()) : Date.now();
+        fresh[member].entries.push({
+          id: ts + '_' + Math.random().toString(36).slice(2,7),
+          block, raw, scored, leadType: lead,
+          size: TSHIRT_LABELS[raw] || 'M',
+          company: iCompany >= 0 ? (cells[iCompany] || '').trim() : '',
+          note: iNote >= 0 ? (cells[iNote] || '').trim() : '',
+          ts
+        });
+        fresh[member].scored += scored; fresh[member].raw += raw; fresh[member].eng++;
+        n++;
+      }
+      data = fresh;
+      saveToStorage();
+      renderAll();
+      document.getElementById('recent-card').style.display = 'none';
+      showFlash('⬆ Imported ' + n + ' entries' + (skipped ? ' (' + skipped + ' skipped)' : ''));
+      showStatus('Imported ' + n + ' entries' + (skipped ? ', ' + skipped + ' rows skipped' : ''), 'ok');
+    } catch (err) {
+      showStatus('Import failed: ' + err.message, 'err');
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Real .xlsx export (self-contained, no libraries) ---------- */
+function crc32(bytes) {
+  let crc = -1;
+  for (let i = 0; i < bytes.length; i++) {
+    crc ^= bytes[i];
+    for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+  }
+  return (crc ^ -1) >>> 0;
+}
+function concatBytes(arrs) {
+  let len = 0; arrs.forEach(a => len += a.length);
+  const out = new Uint8Array(len); let o = 0;
+  arrs.forEach(a => { out.set(a, o); o += a.length; });
+  return out;
+}
+function u16(n){ return new Uint8Array([n & 255, (n>>8) & 255]); }
+function u32(n){ return new Uint8Array([n & 255, (n>>8) & 255, (n>>16) & 255, (n>>24) & 255]); }
+
+function zipStore(files) { // files: [{name, data:Uint8Array}]  (no compression)
+  const enc = new TextEncoder();
+  const locals = [], central = [];
+  let offset = 0;
+  files.forEach(f => {
+    const nameB = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const local = concatBytes([
+      u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(size), u32(size), u16(nameB.length), u16(0), nameB, f.data
+    ]);
+    central.push(concatBytes([
+      u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(size), u32(size), u16(nameB.length), u16(0), u16(0), u16(0), u16(0),
+      u32(0), u32(offset), nameB
+    ]));
+    locals.push(local);
+    offset += local.length;
+  });
+  const centralBytes = concatBytes(central);
+  const eocd = concatBytes([
+    u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length),
+    u32(centralBytes.length), u32(offset), u16(0)
+  ]);
+  return new Blob([concatBytes([...locals, centralBytes, eocd])], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function colRef(i) { let s = ''; i++; while (i > 0) { const m = (i-1) % 26; s = String.fromCharCode(65+m) + s; i = Math.floor((i-1)/26); } return s; }
+function xmlEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function sheetXml(rows) { // rows: array of arrays; numbers stay numeric, everything else inline string
+  const body = rows.map((row, r) => {
+    const cells = row.map((val, c) => {
+      const ref = colRef(c) + (r+1);
+      if (typeof val === 'number' && isFinite(val)) return '<c r="'+ref+'"><v>'+val+'</v></c>';
+      return '<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+xmlEsc(val == null ? '' : val)+'</t></is></c>';
+    }).join('');
+    return '<row r="'+(r+1)+'">'+cells+'</row>';
+  }).join('');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' + body + '</sheetData></worksheet>';
+}
+
+function exportXlsx() {
+  const enc = new TextEncoder();
+  // Sheet 1 — every meeting / opportunity
+  const entries = [CSV_COLS, ...entryRows()];
+  // Sheet 2 — per-member summary
+  const summary = [['Member','Team','Scored Pipeline','Raw Pipeline','Engagements']];
+  ALL.forEach(n => summary.push([n, BOOTH.includes(n)?'Booth':'Meetings', data[n].scored, data[n].raw, data[n].eng]));
+  const boothS = BOOTH.reduce((s,n)=>s+data[n].scored,0), mtgS = MEETINGS.reduce((s,n)=>s+data[n].scored,0);
+  summary.push([]);
+  summary.push(['Booth Team','', boothS, '', 'target ' + fmt(BOOTH_TARGET)]);
+  summary.push(['Meetings Team','', mtgS, '', 'target ' + fmt(MTG_TARGET)]);
+  summary.push(['COMBINED','', boothS+mtgS, '', 'target ' + fmt(TOTAL_TARGET)]);
+
+  const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+  const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets><sheet name="Entries" sheetId="1" r:id="rId1"/><sheet name="Summary" sheetId="2" r:id="rId2"/></sheets></workbook>';
+  const wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>';
+
+  const files = [
+    {name:'[Content_Types].xml', data: enc.encode(contentTypes)},
+    {name:'_rels/.rels', data: enc.encode(rels)},
+    {name:'xl/workbook.xml', data: enc.encode(workbook)},
+    {name:'xl/_rels/workbook.xml.rels', data: enc.encode(wbRels)},
+    {name:'xl/worksheets/sheet1.xml', data: enc.encode(sheetXml(entries))},
+    {name:'xl/worksheets/sheet2.xml', data: enc.encode(sheetXml(summary))},
+  ];
+  download(zipStore(files), 'shoptalk-pipeline-' + stamp() + '.xlsx');
+  showFlash('⬇ Excel workbook downloaded');
+}
+
+// ── Follow-up Tab ────────────────────────────────────────────────────────────
+let fuFilter = 'all'; // all | hot | warm | nurture | sent
+let fuView   = 'board';
+let fuSearch = '';
+let fuOwner  = '';
+let _fuList  = []; // [{entry, member}] ordered for index-based DOM
+
+const FU_BLBL = {day1:'Day 1',rooftop:'Rooftop',day2:'Day 2',day3breakfast:'Day 3 AM',day3:'Day 3'};
+
+const FU_TMPL = {
+  active: {
+    sub:  (c,e)    => `Following up from Shoptalk — ${c}`,
+    body: (c,e,ae) => `Hi ${e.contactName ? e.contactName.split(' ')[0] : 'there'},\n\nGreat to connect with you in Barcelona. As we discussed, I'm looping in the right people on our side to move things forward.\n\nTo confirm what we agreed:\n• [Action 1 — owner + date]\n• [Action 2 — owner + date]\n• Next meeting: [date / format / attendees]\n\nI'll send a calendar invite shortly — let me know if anything changes.\n\nTalk soon,\n${ae}\nRezolve Ai | rezolve.com`
+  },
+  warm: {
+    sub:  (c,e)    => `Great connecting at Shoptalk — next steps for ${c}`,
+    body: (c,e,ae) => `Hi ${e.contactName ? e.contactName.split(' ')[0] : 'there'},\n\nReally enjoyed our conversation at Shoptalk${e.note ? ' — ' + e.note.split('.')[0].toLowerCase() + '.' : '.'}\n\nAs promised:\n• [Link / deck / case study relevant to their use case]\n• [Specific follow-up committed to in the meeting]\n\nI'd love to set up a proper session to go deeper — does a 30-min call the week of [date] work?\n\nBest,\n${ae}\nRezolve Ai | rezolve.com`
+  },
+  cold: {
+    sub:  (c,e)    => `Good to meet you at Shoptalk — ${c}`,
+    body: (c,e,ae) => `Hi ${e.contactName ? e.contactName.split(' ')[0] : 'there'},\n\nGood to connect briefly at Shoptalk — hope the rest of the show was useful.\n\n${e.note ? '[' + e.note.split('.')[0] + ']' : '[One sentence on what you discussed.]'}\n\nI thought this might be relevant: [link to a short resource or case study].\n\nNo pressure — just wanted to stay on your radar heading into H2.\n\n${ae}\nRezolve Ai | rezolve.com`
+  }
+};
+
+let _fuEmailEntry  = null;
+let _fuEmailMember = null;
+let _fuEmailTab    = 'active';
+
+function fuGetAll() {
+  const list = [];
+  ALL.forEach(n => data[n].entries.forEach(e => { if (e.company) list.push({entry:e, member:n}); }));
+  list.sort((a,b) => b.entry.scored - a.entry.scored);
+  return list;
+}
+
+function fuApplyFilters(list) {
+  return list.filter(({entry, member}) => {
+    if (fuFilter === 'hot'    && entry.leadType !== 'hot')    return false;
+    if (fuFilter === 'warm'   && entry.leadType !== 'warm')   return false;
+    if (fuFilter === 'nurture'&& entry.leadType !== 'nurture')return false;
+    if (fuFilter === 'sent'   && !entry.followedUp)           return false;
+    if (fuOwner  && member !== fuOwner)                       return false;
+    if (fuSearch && !entry.company.toLowerCase().includes(fuSearch.toLowerCase())) return false;
+    return true;
+  });
+}
+
+function renderFollowup() {
+  const all      = fuGetAll();
+  const filtered = fuApplyFilters(all);
+  _fuList = filtered;
+
+  // Stats strip
+  const totalScored = all.reduce((s,x) => s+x.entry.scored, 0);
+  const totalRaw    = all.reduce((s,x) => s+x.entry.raw, 0);
+  const sentCnt     = all.filter(x => x.entry.followedUp).length;
+  document.getElementById('fu-stats').innerHTML = [
+    {label:'🔥 Pending Hot',    val: all.filter(x=>x.entry.leadType==='hot'   &&!x.entry.followedUp).length, color:'var(--hot)'},
+    {label:'🟡 Pending Warm',   val: all.filter(x=>x.entry.leadType==='warm'  &&!x.entry.followedUp).length, color:'var(--warm)'},
+    {label:'🌱 Pending Nurture',val: all.filter(x=>x.entry.leadType==='nurture'&&!x.entry.followedUp).length, color:'var(--nurture)'},
+    {label:'✓ Sent',            val: sentCnt+' / '+all.length,  color:'var(--green)'},
+    {label:'Scored Pipeline',   val: fmt(totalScored), color:'var(--gold)', sub:'raw '+fmt(totalRaw)},
+  ].map(k=>`<div class="card" style="padding:12px 14px;flex:1;min-width:110px">
+    <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:4px">${k.label.toUpperCase()}</div>
+    <div class="big" style="font-size:22px;color:${k.color};line-height:1">${k.val}</div>
+    ${k.sub?`<div style="font-size:9px;color:var(--muted);margin-top:2px">${k.sub}</div>`:''}</div>`).join('');
+
+  // Filter pills
+  document.getElementById('fu-filters').innerHTML = [
+    {id:'all',    label:'All · '+all.length},
+    {id:'hot',    label:'🔥 Hot · '+all.filter(x=>x.entry.leadType==='hot').length},
+    {id:'warm',   label:'🟡 Warm · '+all.filter(x=>x.entry.leadType==='warm').length},
+    {id:'nurture',label:'🌱 Nurture · '+all.filter(x=>x.entry.leadType==='nurture').length},
+    {id:'sent',   label:'✓ Sent · '+sentCnt},
+  ].map(f=>`<button class="block-pill${fuFilter===f.id?' active':''}" onclick="setFuFilter('${f.id}')">${f.label}</button>`).join('');
+
+  // AE pills
+  const base = fuFilter==='sent'    ? all.filter(x=>x.entry.followedUp)
+             : fuFilter==='hot'     ? all.filter(x=>x.entry.leadType==='hot')
+             : fuFilter==='warm'    ? all.filter(x=>x.entry.leadType==='warm')
+             : fuFilter==='nurture' ? all.filter(x=>x.entry.leadType==='nurture') : all;
+  document.getElementById('fu-ae-filters').innerHTML =
+    `<span style="font-size:9px;letter-spacing:2px;color:var(--muted);margin-right:8px;vertical-align:middle">AE</span>` +
+    [...BOOTH,...MEETINGS].map(ae => {
+      const cnt = base.filter(x=>x.member===ae).length;
+      if (!cnt) return '';
+      return `<button class="block-pill${fuOwner===ae?' active':''}" onclick="setFuOwner('${ae}')" style="margin-bottom:4px">${ae} · ${cnt}</button>`;
+    }).join('');
+
+  // Sync search input
+  const si = document.getElementById('fu-search'), sc = document.getElementById('fu-search-clear');
+  if (si && si !== document.activeElement) si.value = fuSearch;
+  if (sc) sc.style.display = fuSearch ? 'block' : 'none';
+
+  // View toggle
+  document.getElementById('fu-vt-board').classList.toggle('active', fuView==='board');
+  document.getElementById('fu-vt-ae').classList.toggle('active',    fuView==='ae');
+
+  if (fuView === 'board') renderFuBoard(filtered);
+  else                    renderFuAE(filtered);
+}
+
+function renderFuBoard(filtered) {
+  document.getElementById('fu-board').style.display   = 'grid';
+  document.getElementById('fu-ae-view').style.display = 'none';
+  const ltColors = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji  = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  ['hot','warm','nurture'].forEach(lt => {
+    const col = filtered.filter(x => x.entry.leadType === lt);
+    document.getElementById('fu-col-'+lt).innerHTML =
+      `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;letter-spacing:3px;color:${ltColors[lt]}">${ltEmoji[lt]} ${lt.toUpperCase()} · ${col.length}</div>
+        <div class="big" style="font-size:14px;color:var(--gold)">${col.length ? fmt(col.reduce((s,x)=>s+x.entry.scored,0)) : ''}</div>
+      </div>` +
+      (col.length ? col.map(x => fuCardHTML(x.entry, x.member, filtered.indexOf(x))).join('') : `<div class="empty">NO ${lt.toUpperCase()} LEADS</div>`);
+  });
+}
+
+function renderFuAE(filtered) {
+  document.getElementById('fu-board').style.display   = 'none';
+  document.getElementById('fu-ae-view').style.display = 'block';
+  const aeMap = {};
+  filtered.forEach(x => {
+    if (!aeMap[x.member]) aeMap[x.member] = {items:[], scored:0};
+    aeMap[x.member].items.push(x);
+    aeMap[x.member].scored += x.entry.scored;
+  });
+  if (!Object.keys(aeMap).length) {
+    document.getElementById('fu-ae-view').innerHTML = '<div class="empty">NO ENTRIES MATCH CURRENT FILTERS</div>';
+    return;
+  }
+  const teamColor = m => BOOTH.includes(m)?'var(--orange)':SDR.includes(m)?'var(--accent)':'var(--purple)';
+  const teamLabel = m => BOOTH.includes(m)?'BOOTH':SDR.includes(m)?'SDR':'MEETINGS';
+  document.getElementById('fu-ae-view').innerHTML = Object.entries(aeMap)
+    .sort((a,b)=>b[1].scored-a[1].scored)
+    .map(([ae,{items,scored}]) => {
+      const col = teamColor(ae);
+      const sentN = items.filter(x=>x.entry.followedUp).length;
+      const hotN  = items.filter(x=>x.entry.leadType==='hot').length;
+      return `<div style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          <div style="width:34px;height:34px;border-radius:50%;background:${col}22;border:1px solid ${col}55;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:13px;color:${col};flex-shrink:0">${ae.slice(0,2).toUpperCase()}</div>
+          <div>
+            <div style="font-size:14px">${ae}</div>
+            <div style="font-size:9px;letter-spacing:2px;color:var(--muted)">${teamLabel(ae)} TEAM</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:20px;text-align:right">
+            <div><div class="big" style="font-size:16px;color:var(--gold)">${fmt(scored)}</div><div style="font-size:8px;letter-spacing:1px;color:var(--muted)">SCORED</div></div>
+            <div><div class="big" style="font-size:16px;color:var(--hot)">${hotN}</div><div style="font-size:8px;letter-spacing:1px;color:var(--muted)">HOT</div></div>
+            <div><div class="big" style="font-size:16px;color:var(--green)">${sentN}</div><div style="font-size:8px;letter-spacing:1px;color:var(--muted)">SENT</div></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px">
+          ${items.map(x => fuCardHTML(x.entry, x.member, filtered.indexOf(x))).join('')}
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function fuCardHTML(entry, memberName, idx) {
+  const lt = entry.leadType;
+  const ltColors = {hot:'var(--hot)',warm:'var(--warm)',nurture:'var(--nurture)'};
+  const ltEmoji  = {hot:'🔥',warm:'🟡',nurture:'🌱'};
+  const contactLine = entry.contactName
+    ? `${entry.contactName}${entry.contactRole?` · <span style="color:var(--muted2)">${entry.contactRole}</span>`:''}`
+    : `<span style="color:var(--border2);font-style:italic">no contact logged</span>`;
+  const esc = s => (s||'').replace(/"/g,'&quot;');
+  return `<div>
+    <div class="fu-card ${lt}${entry.followedUp?' done':''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div class="fu-card-co">${entry.company}</div>
+          <div class="fu-card-contact">${contactLine}</div>
+          ${entry.note?`<div class="fu-card-note">${entry.note.length>90?entry.note.slice(0,90)+'…':entry.note}</div>`:''}
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+            <span class="badge badge-${lt}">${ltEmoji[lt]} ${lt.toUpperCase()}</span>
+            ${entry.block?`<span class="badge" style="background:var(--bg4);color:var(--muted);border:1px solid var(--border)">${FU_BLBL[entry.block]||entry.block}</span>`:''}
+            ${entry.size?`<span class="badge" style="background:var(--bg4);color:var(--gold);border:1px solid #ffd54f33">${entry.size}</span>`:''}
+            ${entry.sdrSource?`<span class="badge badge-sdr-src">SDR: ${entry.sdrSource}</span>`:''}
+            ${entry.followedUp?`<span class="badge" style="background:#00e67622;color:var(--green)">✓ SENT</span>`:''}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="big" style="font-size:18px;color:${ltColors[lt]}">${fmt(entry.scored)}</div>
+          <div style="font-size:9px;color:var(--muted)">raw ${fmt(entry.raw)}</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px">${memberName}</div>
+        </div>
+      </div>
+      <div style="margin-top:9px;display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn-sm" onclick="toggleFuContact(${idx});event.stopPropagation()" style="font-size:9px">✎ Contact</button>
+        <button class="btn-sm" onclick="openFuEmail('${entry.id}');event.stopPropagation()" style="border-color:var(--accent)44;color:var(--accent)">✉ Follow-up</button>
+        <button class="fu-mark-sent ${entry.followedUp?'sent':''}" onclick="fuToggleSent('${entry.id}','${memberName}');event.stopPropagation()">${entry.followedUp?'✓ Sent':'Mark Sent'}</button>
+      </div>
+    </div>
+    <div id="fuc${idx}" style="display:none;background:var(--bg4);border:1px solid var(--accent)33;border-top:none;padding:14px 15px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="field" style="margin-bottom:0"><label>Contact Name</label><input type="text" id="fucc-nm${idx}" placeholder="First Last" value="${esc(entry.contactName)}"></div>
+        <div class="field" style="margin-bottom:0"><label>Role</label><input type="text" id="fucc-ro${idx}" placeholder="Head of Digital" value="${esc(entry.contactRole)}"></div>
+        <div class="field" style="margin-bottom:0"><label>Email</label><input type="text" id="fucc-em${idx}" placeholder="name@company.com" value="${esc(entry.contactEmail)}"></div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <button class="btn-primary" style="margin-top:0;max-width:120px;font-size:9px;letter-spacing:1px" onclick="fuSaveContact(${idx},'${entry.id}','${memberName}')">✓ Save</button>
+        <button class="btn-ghost" onclick="toggleFuContact(${idx})">Cancel</button>
+        <div class="status" id="fucc-st${idx}" style="display:none;flex:1;margin:0"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleFuContact(idx) {
+  const panel = document.getElementById('fuc'+idx);
+  if (!panel) return;
+  const opening = panel.style.display === 'none';
+  document.querySelectorAll('[id^="fuc"]').forEach(el => el.style.display='none');
+  if (opening) { panel.style.display='block'; panel.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+
+async function fuSaveContact(idx, entryId, memberName) {
+  const name  = document.getElementById('fucc-nm'+idx)?.value.trim()||'';
+  const role  = document.getElementById('fucc-ro'+idx)?.value.trim()||'';
+  const email = document.getElementById('fucc-em'+idx)?.value.trim()||'';
+  const stEl  = document.getElementById('fucc-st'+idx);
+  stEl.className='status status-load'; stEl.textContent='Saving…'; stEl.style.display='block';
+  const e = data[memberName]?.entries.find(x=>x.id===entryId);
+  if (!e) { stEl.className='status status-err'; stEl.textContent='Not found.'; return; }
+  e.contactName=name; e.contactRole=role; e.contactEmail=email;
+  saveToStorage();
+  await sbPatch(entryId, {contact_name:name, contact_role:role, contact_email:email});
+  stEl.className='status status-ok'; stEl.textContent='✓ Saved!';
+  setTimeout(()=>{ renderFollowup(); showFlash('✓ Contact saved for '+e.company); }, 400);
+}
+
+async function fuToggleSent(entryId, memberName, forceSent) {
+  const e = data[memberName]?.entries.find(x=>x.id===entryId);
+  if (!e) return;
+  const newSent = forceSent !== undefined ? forceSent : !e.followedUp;
+  const now = new Date().toISOString();
+  e.followedUp = newSent; e.sentAt = newSent ? now : null;
+  saveToStorage();
+  await sbPatch(entryId, {followed_up:newSent, sent_at:newSent?now:null});
+  renderFollowup();
+  showFlash(newSent ? '✓ '+e.company+' marked as sent' : '↩ '+e.company+' unmarked');
+}
+
+function openFuEmail(entryId) {
+  let found = _fuList.find(x=>x.entry.id===entryId);
+  if (!found) { ALL.forEach(n=>data[n].entries.forEach(e=>{ if(e.id===entryId) found={entry:e,member:n}; })); }
+  if (!found) return;
+  _fuEmailEntry=found.entry; _fuEmailMember=found.member;
+  const e=_fuEmailEntry;
+  const ltEmoji={hot:'🔥',warm:'🟡',nurture:'🌱'};
+  document.getElementById('fu-email-header').innerHTML = [
+    {l:'Company',v:e.company},
+    {l:'Contact', v:e.contactName||'—'},
+    e.contactRole?{l:'Role',v:e.contactRole}:null,
+    {l:'Status',  v:`<span class="badge badge-${e.leadType}">${ltEmoji[e.leadType]} ${e.leadType.toUpperCase()}</span>`},
+    {l:'Value',   v:`<span style="color:var(--gold)">${fmt(e.scored)}</span>`},
+    {l:'AE',      v:_fuEmailMember},
+    e.block?{l:'Block',v:FU_BLBL[e.block]||e.block}:null,
+  ].filter(Boolean).map(x=>`<div><div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:2px">${x.l.toUpperCase()}</div><div style="font-size:12px">${x.v}</div></div>`).join('');
+  const np=document.getElementById('fu-notes-preview');
+  if (e.note) { np.style.display='block'; document.getElementById('fu-notes-text').textContent=e.note; }
+  else np.style.display='none';
+  fuSetEmailTab({hot:'active',warm:'warm',nurture:'cold'}[e.leadType]||'warm');
+  document.getElementById('fu-copy-btn').textContent='Copy Email';
+  document.getElementById('fu-copy-btn').style.background='var(--accent)';
+  document.getElementById('fu-email-status').style.display='none';
+  document.getElementById('fu-email-modal').style.display='flex';
+}
+
+function closeFuEmail() { document.getElementById('fu-email-modal').style.display='none'; _fuEmailEntry=null; _fuEmailMember=null; }
+
+function fuSetEmailTab(tab) {
+  _fuEmailTab=tab;
+  document.querySelectorAll('.fu-etab').forEach((b,i)=>b.classList.toggle('active',['active','warm','cold'][i]===tab));
+  if (_fuEmailEntry) {
+    const t=FU_TMPL[tab];
+    document.getElementById('fu-e-subject').value=t.sub(_fuEmailEntry.company,_fuEmailEntry);
+    document.getElementById('fu-e-body').value=t.body(_fuEmailEntry.company,_fuEmailEntry,_fuEmailMember);
+  }
+}
+
+function fuCopyEmail() {
+  navigator.clipboard.writeText(`Subject: ${document.getElementById('fu-e-subject').value}\n\n${document.getElementById('fu-e-body').value}`).then(()=>{
+    const btn=document.getElementById('fu-copy-btn');
+    btn.textContent='✓ Copied!'; btn.style.background='var(--green)';
+    setTimeout(()=>{ btn.textContent='Copy Email'; btn.style.background='var(--accent)'; },2200);
+  });
+}
+
+async function fuMarkSentFromEmail() {
+  if (!_fuEmailEntry) return;
+  await fuToggleSent(_fuEmailEntry.id, _fuEmailMember, true);
+  const st=document.getElementById('fu-email-status');
+  st.className='status status-ok'; st.textContent='✓ Marked as sent!'; st.style.display='block';
+  setTimeout(()=>closeFuEmail(), 800);
+}
+
+function setFuFilter(f)  { fuFilter=f;  renderFollowup(); }
+function setFuView(v)    { fuView=v;    renderFollowup(); }
+function setFuOwner(ae)  { fuOwner=(fuOwner===ae)?'':ae; renderFollowup(); }
+function setFuSearch(v)  {
+  fuSearch=v;
+  const clr=document.getElementById('fu-search-clear');
+  if(clr) clr.style.display=v?'block':'none';
+  renderFollowup();
+  const inp=document.getElementById('fu-search');
+  if(inp){inp.value=v; inp.focus(); inp.setSelectionRange(v.length,v.length);}
+}
+function clearFuSearch() {
+  fuSearch='';
+  const inp=document.getElementById('fu-search'), clr=document.getElementById('fu-search-clear');
+  if(inp){inp.value=''; inp.focus();}
+  if(clr) clr.style.display='none';
+  renderFollowup();
+}
+
+// Init — show cached data instantly, then sync live from Supabase
+data = loadFromStorage();
+updatePreview();
+renderAll();
+syncFromSupabase();
+setInterval(syncFromSupabase, 30000);
+</script>
+</body>
+</html>
